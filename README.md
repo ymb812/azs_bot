@@ -1,0 +1,1 @@
+# Bot with admin-panel is entrypoint for course
