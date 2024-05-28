@@ -1,3 +1,4 @@
+import logging
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
@@ -7,9 +8,11 @@ from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
 from core.database.models import User, SupportRequest, Station, Dispatcher, Post
-from core.keyboards.inline import support_kb
 from core.utils.texts import _
+from parser.stations_parser import StationsParser
 from settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationCallbackHandler:
@@ -74,6 +77,29 @@ class StationCallbackHandler:
     ):
         dialog_manager.dialog_data['station_id'] = value
         await dialog_manager.switch_to(state=StationStateGroup.confirm_station)
+
+
+    @staticmethod
+    async def list_of_products(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        station_id = dialog_manager.dialog_data['station_id']
+
+        # request for station products
+        # TODO: REQUEST TO DB
+        # try:
+        #     products = await StationsParser.products_parser(station_id=station_id)
+        # except Exception as e:
+        #     await callback.message.answer(text='Не удалось получить данные по данной заправке - обратитесь в поддержку')
+        #     # TODO: GET OLD DB DATA AND SEND NOTIFICATION
+        #     logger.critical(f'Product info cannot be received for station_id={station_id}', exc_info=e)
+        #     return
+
+        # TODO: CACHE TO DB
+
+        await dialog_manager.switch_to(state=StationStateGroup.pick_product)
 
 
 class SupportCallbackHandler:

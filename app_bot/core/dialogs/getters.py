@@ -1,5 +1,5 @@
 from aiogram_dialog import DialogManager
-from core.database.models import User, Station
+from core.database.models import User, Station, StationProduct
 
 
 async def get_input_data(dialog_manager: DialogManager, **kwargs):
@@ -28,3 +28,8 @@ async def get_station_data(dialog_manager: DialogManager, **kwargs):
     return {
         'station': station
     }
+
+
+async def get_products_by_station(dialog_manager: DialogManager, **kwargs):
+    station_id = dialog_manager.dialog_data['station_id']
+    # TODO: GET DATA FROM DB

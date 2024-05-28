@@ -23,3 +23,20 @@ class StationData(BaseModel):
 
         moscow_tz = pytz.timezone('Europe/Moscow')
         return v.astimezone(moscow_tz)
+
+
+class ProductData(BaseModel):
+    station_id: int
+    product_code: str | None
+    product_name: str | None
+    price: str | None
+    date: datetime | None
+
+    @field_validator('date')
+    @classmethod
+    def set_moscow_timezone(cls, v):
+        if v is None:
+            return v
+
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        return v.astimezone(moscow_tz)

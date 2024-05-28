@@ -5,7 +5,7 @@ from datetime import datetime
 from aiogram import Bot, types, exceptions
 from aiogram.utils.i18n import I18n
 from core.database import init
-from core.database.models import User, Dispatcher, Post, MailingLog
+from core.database.models import User, Dispatcher, Post, MailingLog, StationProduct, Station
 from parser.stations_parser import StationsParser
 from settings import settings
 
@@ -150,6 +150,9 @@ class Broadcaster(object):
 
     @classmethod
     async def start_event_loop(cls):
+        await cls.azs_data_parser()
+        return
+
         logger.info('Broadcaster started')
         while True:
             try:
@@ -190,6 +193,24 @@ class Broadcaster(object):
                 continue
 
             await asyncio.sleep(settings.broadcaster_sleep)
+
+    @classmethod
+    async def azs_data_parser(cls):
+        # TODO: ADD TO SEPARATED SCHEDULER
+        # azs info
+        await StationsParser.azs_parser()
+
+        # TODO: ADD TO SEPARATED SCHEDULER
+        # products info
+        def chunk_list(data, chunk_size):
+            return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+
+        stations = await Station.all().only('id')
+        station_ids = [station.id for station in stations]
+        station_chunks = chunk_list(station_ids, 100)
+        for n, chunk in enumerate(station_chunks, start=1):
+            await StationsParser.products_parser(group_of_stations_ids=chunk)
+            logger.info(f'Products on {n * 100} stations are updated')
 
 
 async def main():

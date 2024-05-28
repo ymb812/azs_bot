@@ -57,6 +57,18 @@ class Station(Model):
     updated_at = fields.DatetimeField(null=True)
 
 
+class StationProduct(Model):
+    class Meta:
+        table = 'station_products'
+
+    id = fields.BigIntField(pk=True)
+    station = fields.ForeignKeyField('models.Station', to_field='id', related_name='station_product')
+    product_code = fields.CharField(max_length=64, null=True)
+    product_name = fields.CharField(max_length=128, null=True)
+    price = fields.CharField(max_length=64, null=True)
+    date = fields.DatetimeField(null=True)
+
+
 class SupportRequest(Model):
     class Meta:
         table = 'support_requests'
