@@ -4,24 +4,20 @@ from aiogram_dialog.widgets.kbd import Button, Start, SwitchTo
 from core.dialogs.callbacks import CallBackHandler
 from core.dialogs.getters import get_input_data
 from core.states.main_menu import MainMenuStateGroup
-from core.states.registration import RegistrationStateGroup
+from core.states.profile import ProfileStateGroup
+from core.states.AZS import AZSStateGroup
 from core.states.support import SupportStateGroup
 from core.utils.texts import _
 
 
+# TODO: RENAME AZS TO STATION
 main_menu_dialog = Dialog(
-    # general registration
-    Window(
-        Const(text='Пожалуйста, зарегистрируйтесь для доступа к боту'),
-        Button(Const(text=_('Зарегистрироваться')), id='general_registration', on_click=CallBackHandler.start_general_registration),
-        state=MainMenuStateGroup.general_registration,
-    ),
-
     # main menu
     Window(
-        Const(text='Выберите действие'),
-        Button(Const(text='Безоплатные медитации'), id='meditation', on_click=CallBackHandler.start_meditation),
-        Button(Const(text='Счастливые даты '), id='days_1', on_click=CallBackHandler.start_days),
+        Const(text='<b>Главное меню</b>'),
+        Start(Const(text='Мой профиль'), id='profile', state=ProfileStateGroup.menu),
+        Start(Const(text='Найти АЗС'), id='azs_work', state=AZSStateGroup.menu),
+        Start(Const(text='Связаться с менеджером'), id='days_1', state=SupportStateGroup.question_input),
         state=MainMenuStateGroup.main_menu,
     ),
 

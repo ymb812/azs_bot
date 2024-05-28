@@ -115,24 +115,6 @@ class CallBackHandler:
 
         value: str
         dialog_manager.dialog_data['fio'] = value
-        await dialog_manager.switch_to(state=RegistrationStateGroup.email_input)
-
-
-    @staticmethod
-    async def entered_email(
-            message: Message,
-            widget: ManagedTextInput,
-            dialog_manager: DialogManager,
-            value,
-    ):
-        # correct checker
-        email = message.text.strip()
-        email_regex = '^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$'
-        if not re.match(email_regex, email):
-            return
-
-        value: str
-        dialog_manager.dialog_data['email'] = value
         await dialog_manager.switch_to(state=RegistrationStateGroup.phone_input)
 
 
@@ -159,15 +141,10 @@ class CallBackHandler:
             item_id: str | None = None,
     ):
         user = await User.get(user_id=callback.from_user.id)
-
         user.is_registered = True
         user.fio = dialog_manager.dialog_data['fio']
         user.phone = dialog_manager.dialog_data['phone']
-        user.email = dialog_manager.dialog_data['email']
         await user.save()
-
-        # delete notification order
-        await Dispatcher.filter(post_id=settings.notification_post_id, user_id=callback.from_user.id).delete()
 
         await dialog_manager.start(state=MainMenuStateGroup.main_menu, show_mode=ShowMode.DELETE_AND_SEND)
 

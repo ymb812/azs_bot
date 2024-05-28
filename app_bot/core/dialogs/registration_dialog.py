@@ -1,4 +1,3 @@
-from aiogram import F
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.markup.reply_keyboard import ReplyKeyboardFactory
@@ -11,6 +10,13 @@ from core.utils.texts import _
 
 
 registration_dialog = Dialog(
+    # general registration
+    Window(
+        Const(text='Приветственное сообщение.\n\nПожалуйста, зарегистрируйтесь для доступа к боту'),
+        SwitchTo(Const(text=_('Зарегистрироваться')), id='go_to_fio', state=RegistrationStateGroup.fio_input),
+        state=RegistrationStateGroup.general_registration,
+    ),
+
     # fio input
     Window(
         Const(text=_('FIO_INPUT')),
@@ -22,24 +28,12 @@ registration_dialog = Dialog(
         state=RegistrationStateGroup.fio_input,
     ),
 
-    # email input
-    Window(
-        Const(text=_('EMAIL_INPUT')),
-        TextInput(
-            id='email_input',
-            type_factory=str,
-            on_success=CallBackHandler.entered_email
-        ),
-        SwitchTo(Const(text=_('BACK_BUTTON')), id='switch_to_fio', state=RegistrationStateGroup.fio_input),
-        state=RegistrationStateGroup.email_input,
-    ),
-
     # phone input
     Window(
         Const(text=_('PHONE_INPUT')),
         RequestContact(Const(text=_('SHARE_CONTACT_BUTTON'))),
         MessageInput(func=CallBackHandler.entered_phone),
-        SwitchTo(Const(text=_('BACK_BUTTON')), id='switch_to_email', state=RegistrationStateGroup.email_input),
+        SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_fio', state=RegistrationStateGroup.fio_input),
         markup_factory=ReplyKeyboardFactory(resize_keyboard=True),
         state=RegistrationStateGroup.phone_input,
     ),
@@ -48,11 +42,10 @@ registration_dialog = Dialog(
     Window(
         Format(text=_('CONFIRM_INPUT_DATA',
                       fio='{data[fio]}',
-                      phone='{data[phone]}',
-                      email='{data[email]}',)
+                      phone='{data[phone]}')
                ),
         Button(Const(text=_('CONFIRM_BUTTON')), id='end_of_reg', on_click=CallBackHandler.confirm_data),
-        SwitchTo(Const(text=_('BACK_BUTTON')), id='switch_to_phone', state=RegistrationStateGroup.phone_input),
+        SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_phone', state=RegistrationStateGroup.phone_input),
         getter=get_input_data,
         state=RegistrationStateGroup.confirm,
     ),
