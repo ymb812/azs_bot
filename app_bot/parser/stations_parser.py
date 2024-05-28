@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 class StationsParser:
     @classmethod
-    async def azs_parser(cls):
+    async def save_all_stations(cls):
+        logger.info('Start all stations parser')
         async with ClientSession() as session:
             try:
                 response = await session.get(
@@ -19,20 +20,23 @@ class StationsParser:
                 )
                 stations = await response.json()
 
+                logger.info(f'Stations amount: {len(stations)}')
                 tasks = []
                 for station in stations:
                     station_data = StationData(**station)
-                    task = cls.update_station(station_data)
+                    task = cls.__update_station(station_data)
                     tasks.append(task)
 
                 await asyncio.gather(*tasks)
+
+                logger.info(f'End all stations parser: {len(stations)}')
 
             except Exception as e:
                 logger.error('Failed to fetch or update stations', exc_info=e)
 
 
     @staticmethod
-    async def update_station(station_data: StationData):
+    async def __update_station(station_data: StationData):
         try:
             await Station.update_or_create(
                 id=station_data.id,
@@ -51,8 +55,23 @@ class StationsParser:
         except Exception as e:
             logger.error(f'Failed to update station: {station_data}', exc_info=e)
 
+
     @classmethod
-    async def products_parser(cls, group_of_stations_ids: list[int]):
+    async def save_all_products(cls):
+        def chunk_list(data, chunk_size):
+            return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+
+        stations = await Station.all().only('id')
+        station_ids = [station.id for station in stations]
+        station_chunks = chunk_list(station_ids, 100)
+
+        for n, chunk in enumerate(station_chunks, start=1):
+            await cls.__products_parser(group_of_stations_ids=chunk)
+            logger.info(f'Products on {n * 100} stations are updated')
+
+
+    @classmethod
+    async def __products_parser(cls, group_of_stations_ids: list[int]):
         async with ClientSession() as session:
             async with session.post(
                     url=settings.prices_route,
@@ -65,7 +84,7 @@ class StationsParser:
                 try:
                     for product in products:
                         product_data = ProductData(**product)
-                        task = cls.update_product(product_data)
+                        task = cls.__update_product(product_data)
                         tasks.append(task)
 
                     await asyncio.gather(*tasks)
@@ -74,8 +93,9 @@ class StationsParser:
                     logger.critical(f'Product info cannot be updated with response: {await response.text()}',
                                     exc_info=e)
 
+
     @staticmethod
-    async def update_product(product_data: ProductData):
+    async def __update_product(product_data: ProductData):
         try:
             await StationProduct.update_or_create(
                 station_id=product_data.station_id,

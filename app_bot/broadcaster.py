@@ -4,6 +4,8 @@ from tortoise.expressions import Q
 from datetime import datetime
 from aiogram import Bot, types, exceptions
 from aiogram.utils.i18n import I18n
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from core.database import init
 from core.database.models import User, Dispatcher, Post, MailingLog, StationProduct, Station
 from parser.stations_parser import StationsParser
@@ -150,10 +152,6 @@ class Broadcaster(object):
 
     @classmethod
     async def start_event_loop(cls):
-        await cls.azs_data_parser()
-        return
-
-        logger.info('Broadcaster started')
         while True:
             try:
                 active_orders = await Dispatcher.filter(send_at__lte=datetime.now()).all()
@@ -194,29 +192,37 @@ class Broadcaster(object):
 
             await asyncio.sleep(settings.broadcaster_sleep)
 
-    @classmethod
-    async def azs_data_parser(cls):
-        # TODO: ADD TO SEPARATED SCHEDULER
-        # azs info
-        await StationsParser.azs_parser()
-
-        # TODO: ADD TO SEPARATED SCHEDULER
-        # products info
-        def chunk_list(data, chunk_size):
-            return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
-
-        stations = await Station.all().only('id')
-        station_ids = [station.id for station in stations]
-        station_chunks = chunk_list(station_ids, 100)
-        for n, chunk in enumerate(station_chunks, start=1):
-            await StationsParser.products_parser(group_of_stations_ids=chunk)
-            logger.info(f'Products on {n * 100} stations are updated')
-
 
 async def main():
     await init()
     await Broadcaster.start_event_loop()
 
 
+async def run_scheduler():
+    scheduler = AsyncIOScheduler()
+
+    # save_all_stations
+    scheduler.add_job(
+        func=StationsParser.save_all_stations,
+        trigger=CronTrigger(hour=settings.stations_parser_hours, minute=settings.stations_parser_minutes),
+        misfire_grace_time=10,
+    )
+
+    # save_all_products
+    scheduler.add_job(
+        func=StationsParser.save_all_products,
+        trigger=CronTrigger(hour=settings.products_parser_hours, minute=settings.products_parser_minutes),
+        misfire_grace_time=10,
+    )
+
+    scheduler.start()
+
+
+async def run_tasks():
+    broadcaster = asyncio.create_task(main())
+    scheduler = asyncio.create_task(run_scheduler())
+    await asyncio.gather(broadcaster, scheduler)
+
+
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(run_tasks())

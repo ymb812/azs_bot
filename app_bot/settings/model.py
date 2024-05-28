@@ -25,6 +25,10 @@ class APIParser(BaseModel):
 class Broadcaster(BaseModel):
     mailing_batch_size: int = fields.Field(alias='MAILING_BATCH_SIZE', default=25)
     broadcaster_sleep: int = fields.Field(alias='BROADCASTER_SLEEP', default=1)
+    stations_parser_hours: int = fields.Field(alias='STATIONS_PARSER_HOURS')
+    stations_parser_minutes: int = fields.Field(alias='STATIONS_PARSER_MINUTES')
+    products_parser_hours: int = fields.Field(alias='PRODUCTS_PARSER_HOURS')
+    products_parser_minutes: int = fields.Field(alias='PRODUCTS_PARSER_MINUTES')
 
 
 class AppSettings(BaseModel):
