@@ -4,7 +4,7 @@ from aiogram_dialog.widgets.markup.reply_keyboard import ReplyKeyboardFactory
 from aiogram_dialog.widgets.kbd import Button, SwitchTo, RequestContact
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from core.dialogs.getters import get_input_data
-from core.dialogs.callbacks import CallBackHandler
+from core.dialogs.callbacks import RegistrationCallbackHandler
 from core.states.registration import RegistrationStateGroup
 from core.utils.texts import _
 
@@ -23,7 +23,7 @@ registration_dialog = Dialog(
         TextInput(
             id='fio_input',
             type_factory=str,
-            on_success=CallBackHandler.entered_fio,
+            on_success=RegistrationCallbackHandler.entered_fio,
         ),
         state=RegistrationStateGroup.fio_input,
     ),
@@ -32,7 +32,7 @@ registration_dialog = Dialog(
     Window(
         Const(text=_('PHONE_INPUT')),
         RequestContact(Const(text=_('SHARE_CONTACT_BUTTON'))),
-        MessageInput(func=CallBackHandler.entered_phone),
+        MessageInput(func=RegistrationCallbackHandler.entered_phone),
         SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_fio', state=RegistrationStateGroup.fio_input),
         markup_factory=ReplyKeyboardFactory(resize_keyboard=True),
         state=RegistrationStateGroup.phone_input,
@@ -44,7 +44,7 @@ registration_dialog = Dialog(
                       fio='{data[fio]}',
                       phone='{data[phone]}')
                ),
-        Button(Const(text=_('CONFIRM_BUTTON')), id='end_of_reg', on_click=CallBackHandler.confirm_data),
+        Button(Const(text=_('CONFIRM_BUTTON')), id='end_of_reg', on_click=RegistrationCallbackHandler.confirm_data),
         SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_phone', state=RegistrationStateGroup.phone_input),
         getter=get_input_data,
         state=RegistrationStateGroup.confirm,

@@ -6,9 +6,25 @@ async def get_input_data(dialog_manager: DialogManager, **kwargs):
     return {'data': dialog_manager.dialog_data}
 
 
+async def get_bot_data(dialog_manager: DialogManager, **kwargs):
+    return {
+        'bot_username': (await dialog_manager.event.bot.get_me()).username
+    }
+
+
 async def get_user_data(dialog_manager: DialogManager, **kwargs):
     user = await User.get(user_id=dialog_manager.event.from_user.id)
 
     return {
         'user': user
+    }
+
+
+async def get_station_data(dialog_manager: DialogManager, **kwargs):
+    station = await Station.get_or_none(id=dialog_manager.dialog_data['station_id'])
+    if not station:
+        raise ValueError
+
+    return {
+        'station': station
     }
