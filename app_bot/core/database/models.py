@@ -18,6 +18,7 @@ class User(Model):
     fio = fields.CharField(max_length=64, null=True)
     phone = fields.CharField(max_length=16, null=True)
     status = fields.CharField(max_length=32, null=True)  # admin
+    refills_amount = fields.IntField(default=0)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     last_activity = fields.DatetimeField(auto_now=True)
@@ -40,10 +41,9 @@ class User(Model):
         return user
 
 
-# TODO: RENAME TO STATION
-class AZS(Model):
+class Station(Model):
     class Meta:
-        table = 'azs'  # TODO: RENAME TO STATIONS
+        table = 'stations'
 
     id = fields.BigIntField(pk=True)
     name = fields.CharField(max_length=128, null=True)

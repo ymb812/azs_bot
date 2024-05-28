@@ -1,13 +1,12 @@
 import asyncio
 import logging
-import requests
-from pydantic import BaseModel
 from tortoise.expressions import Q
 from datetime import datetime
 from aiogram import Bot, types, exceptions
 from aiogram.utils.i18n import I18n
 from core.database import init
-from core.database.models import User, Dispatcher, Post, MailingLog, AZS
+from core.database.models import User, Dispatcher, Post, MailingLog
+from parser.stations_parser import StationsParser
 from settings import settings
 
 
@@ -151,8 +150,6 @@ class Broadcaster(object):
 
     @classmethod
     async def start_event_loop(cls):
-        await cls.azs_parser()
-        return
         logger.info('Broadcaster started')
         while True:
             try:
@@ -193,43 +190,6 @@ class Broadcaster(object):
                 continue
 
             await asyncio.sleep(settings.broadcaster_sleep)
-
-
-    # TODO: MOVE TO A SEPARATED MODULE
-    @classmethod
-    async def azs_parser(cls):
-        # TODO: URL AND AUTH TO ENV
-        stations = requests.get(url='http://data.omt-consult.ru/api/v1/bulk/stations',
-                                auth=('', '')).json()
-
-        class StationData(BaseModel):
-            id: int
-            name: str | None
-            number: str | None
-            region_name: str | None
-            federal_district: str | None
-            address: str | None
-            status: str | None
-            longitude: str | None
-            latitude: str | None
-            updated_at: str | None
-
-        for station in stations:
-            station_data = StationData(**station)
-            logger.info(station_data.model_dump_json())
-            await AZS.create(  # TODO: CREATE_OR_UPDATE
-                id=station_data.id,
-                name=station_data.name,
-                number=station_data.number,
-                region_name=station_data.region_name,
-                federal_district=station_data.federal_district,
-                address=station_data.address,
-                status=station_data.status,
-                longitude=station_data.longitude,
-                latitude=station_data.latitude,
-                updated_at=station_data.updated_at,
-            )
-            logger.info(f'id={station_data.id} added')
 
 
 async def main():

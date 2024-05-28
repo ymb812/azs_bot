@@ -15,9 +15,17 @@ class BotSettings(BaseModel):
     days_post_id: int = fields.Field(alias='DAYS_POST_ID')
 
 
+class APIParser(BaseModel):
+    api_login: str = fields.Field(alias='API_LOGIN')
+    api_password: SecretStr = fields.Field(alias='API_PASSWORD')
+    all_stations_route: str = fields.Field(alias='ALL_STATIONS_ROUTE')
+    prices_route: str = fields.Field(alias='PRICES_ROUTE')
+
+
 class Broadcaster(BaseModel):
     mailing_batch_size: int = fields.Field(alias='MAILING_BATCH_SIZE', default=25)
     broadcaster_sleep: int = fields.Field(alias='BROADCASTER_SLEEP', default=1)
+
 
 class AppSettings(BaseModel):
     prod_mode: bool = fields.Field(alias='PROD_MODE', default=False)
@@ -40,6 +48,7 @@ class RedisSettings(BaseModel):
 
 class Settings(
     BotSettings,
+    APIParser,
     AppSettings,
     PostgresSettings,
     Broadcaster,

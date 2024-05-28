@@ -5,18 +5,17 @@ from core.dialogs.callbacks import CallBackHandler
 from core.dialogs.getters import get_input_data
 from core.states.main_menu import MainMenuStateGroup
 from core.states.profile import ProfileStateGroup
-from core.states.AZS import AZSStateGroup
+from core.states.station import StationStateGroup
 from core.states.support import SupportStateGroup
 from core.utils.texts import _
 
 
-# TODO: RENAME AZS TO STATION
 main_menu_dialog = Dialog(
     # main menu
     Window(
         Const(text='<b>Главное меню</b>'),
         Start(Const(text='Мой профиль'), id='profile', state=ProfileStateGroup.menu),
-        Start(Const(text='Найти АЗС'), id='azs_work', state=AZSStateGroup.menu),
+        Start(Const(text='Найти АЗС'), id='station_work', state=StationStateGroup.menu),
         Start(Const(text='Связаться с менеджером'), id='days_1', state=SupportStateGroup.question_input),
         state=MainMenuStateGroup.main_menu,
     ),
