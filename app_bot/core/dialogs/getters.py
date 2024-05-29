@@ -1,7 +1,8 @@
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment
-from core.database.models import User, Station, Product, Settings
+from core.database.models import User, Station, Product, Settings, FavouriteStation
+from core.dialogs.custom_content import get_dialog_data
 
 
 async def get_input_data(dialog_manager: DialogManager, **kwargs):
@@ -18,17 +19,29 @@ async def get_user_data(dialog_manager: DialogManager, **kwargs):
     user = await User.get(user_id=dialog_manager.event.from_user.id)
 
     return {
-        'user': user
+        'user': user,
+        'payment_amount': round(user.payment_amount, 2),
     }
 
 
 async def get_station_data(dialog_manager: DialogManager, **kwargs):
+    dialog_manager.dialog_data['station_id'] = get_dialog_data(dialog_manager=dialog_manager, key='station_id')
     station = await Station.get_or_none(id=dialog_manager.dialog_data['station_id'])
     if not station:
         raise ValueError
 
+    # check is it favourite
+    favourite_station = await FavouriteStation.get_or_none(
+        user_id=dialog_manager.event.from_user.id,
+        station_id=station.id
+    )
+    is_favourite = False
+    if favourite_station:
+        is_favourite = True
+
     return {
-        'station': station
+        'station': station,
+        'is_favourite': is_favourite,
     }
 
 
@@ -72,4 +85,13 @@ async def get_payment_photo(dialog_manager: DialogManager, **kwargs):
 
     return {
         'media_content': media_content,
+    }
+
+
+async def get_favourite_stations(dialog_manager: DialogManager, **kwargs):
+    favourite_stations = await FavouriteStation.filter(user_id=dialog_manager.event.from_user.id)
+    stations = [await favourite_station.station for favourite_station in favourite_stations]
+
+    return {
+        'favourite_stations': stations
     }

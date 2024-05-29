@@ -15,7 +15,7 @@ profile_dialog = Dialog(
                  '<b>ФИО:</b> {user.fio}\n'
                  '<b>Телефон:</b> {user.phone}\n'
                  '<b>Количество заправок:</b> {user.refills_amount}\n'
-                 '<b>Сумма заправок:</b> {user.payment_amount} рублей'),
+                 '<b>Сумма заправок:</b> {payment_amount} рублей'),
         Start(Const(text=_('BACK_BUTTON')), id='go_to_main_menu', state=MainMenuStateGroup.main_menu),
         getter=get_user_data,
         state=ProfileStateGroup.menu,
