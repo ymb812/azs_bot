@@ -16,7 +16,7 @@ main_menu_dialog = Dialog(
         Start(Const(text='Мой профиль'), id='profile', state=ProfileStateGroup.menu),
         Start(Const(text='Найти АЗС'), id='station_work', state=StationStateGroup.input_station),
         Start(Const(text='Избранные АЗС'), id='favourite_stations', state=FavouriteStationsStateGroup.menu),
-        Start(Const(text='Связаться с менеджером'), id='days_1', state=SupportStateGroup.question_input),
+        Start(Const(text='Связаться с менеджером'), id='manager_support', state=SupportStateGroup.question_input),
         state=MainMenuStateGroup.main_menu,
     ),
 )

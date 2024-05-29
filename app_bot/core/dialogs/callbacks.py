@@ -1,4 +1,5 @@
 import logging
+import uuid
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
@@ -7,9 +8,9 @@ from aiogram_dialog.api.entities import ShowMode
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
-from core.database.models import User, SupportRequest, Station, Dispatcher, Post
+from core.states.support import SupportStateGroup
+from core.database.models import User, SupportRequest, Product, Order
 from core.utils.texts import _
-from parser.stations_parser import StationsParser
 from settings import settings
 
 logger = logging.getLogger(__name__)
@@ -87,19 +88,70 @@ class StationCallbackHandler:
     ):
         station_id = dialog_manager.dialog_data['station_id']
 
-        # request for station products
-        # TODO: REQUEST TO DB
-        # try:
-        #     products = await StationsParser.products_parser(station_id=station_id)
-        # except Exception as e:
-        #     await callback.message.answer(text='Не удалось получить данные по данной заправке - обратитесь в поддержку')
-        #     # TODO: GET OLD DB DATA AND SEND NOTIFICATION
-        #     logger.critical(f'Product info cannot be received for station_id={station_id}', exc_info=e)
-        #     return
-
-        # TODO: CACHE TO DB
+        products = await Product.filter(station_id=station_id)
+        if not products:
+            await callback.message.answer(text=f'Нет данных по заправке с id={station_id} - обратитесь в поддержку')
+            logger.critical(f'There is no product info station_id={station_id}')
+            return
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_product)
+
+
+    @staticmethod
+    async def selected_product(
+            callback: CallbackQuery,
+            widget: Select,
+            dialog_manager: DialogManager,
+            item_id: int
+    ):
+        dialog_manager.dialog_data['product_id'] = item_id
+        await dialog_manager.switch_to(state=StationStateGroup.input_amount)
+
+
+    @staticmethod
+    async def entered_amount(
+            message: Message,
+            widget: ManagedTextInput,
+            dialog_manager: DialogManager,
+            value,
+    ):
+        dialog_manager.dialog_data['amount'] = value
+        await dialog_manager.switch_to(state=StationStateGroup.confirm_order)
+
+
+    @staticmethod
+    async def create_order(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        order = await Order.create(
+            id=uuid.uuid4(),
+            user_id=callback.from_user.id,
+            station_id=dialog_manager.dialog_data['station_id'],
+            product_id=dialog_manager.dialog_data['product_id'],
+            amount=dialog_manager.dialog_data['amount'],
+            total_price=dialog_manager.dialog_data['total_price'],
+        )
+        dialog_manager.dialog_data['order_id'] = str(order.id)
+
+        # TODO: create invoice link here
+
+        await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
+
+
+    @staticmethod
+    async def delete_order(
+            callback: CallbackQuery,
+            widget: Button,
+            dialog_manager: DialogManager,
+    ):
+        await Order.filter(id=dialog_manager.dialog_data['order_id']).delete()
+
+        if widget.widget_id == 'main_menu':
+            await dialog_manager.start(state=MainMenuStateGroup.main_menu)
+        elif widget.widget_id == 'manager_support':
+            await dialog_manager.start(state=SupportStateGroup.question_input)
 
 
 class SupportCallbackHandler:

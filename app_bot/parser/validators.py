@@ -29,7 +29,7 @@ class ProductData(BaseModel):
     station_id: int
     product_code: str | None
     product_name: str | None
-    price: str | None
+    price: float | None
     date: datetime | None
 
     @field_validator('date')
@@ -40,3 +40,11 @@ class ProductData(BaseModel):
 
         moscow_tz = pytz.timezone('Europe/Moscow')
         return v.astimezone(moscow_tz)
+
+    @field_validator('price')
+    @classmethod
+    def convert_price_to_float(cls, v):
+        if v is None:
+            return v
+
+        return float(v)

@@ -7,7 +7,7 @@ from aiogram.utils.i18n import I18n
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import init
-from core.database.models import User, Dispatcher, Post, MailingLog, StationProduct, Station
+from core.database.models import User, Dispatcher, Post, MailingLog
 from parser.stations_parser import StationsParser
 from settings import settings
 

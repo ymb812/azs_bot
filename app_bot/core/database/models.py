@@ -18,7 +18,7 @@ class User(Model):
     fio = fields.CharField(max_length=64, null=True)
     phone = fields.CharField(max_length=16, null=True)
     status = fields.CharField(max_length=32, null=True)  # admin
-    refills_amount = fields.IntField(default=0)
+    refills_amount = fields.IntField(default=0)  # TODO: += 1 after successful payment
 
     created_at = fields.DatetimeField(auto_now_add=True)
     last_activity = fields.DatetimeField(auto_now=True)
@@ -41,6 +41,15 @@ class User(Model):
         return user
 
 
+class FavouriteStation(Model):
+    class Meta:
+        table = 'favourite_stations'
+
+    id = fields.BigIntField(pk=True)
+    user = fields.ForeignKeyField('models.User', to_field='user_id')
+    station = fields.ForeignKeyField('models.Station', to_field='id')
+
+
 class Station(Model):
     class Meta:
         table = 'stations'
@@ -57,16 +66,33 @@ class Station(Model):
     updated_at = fields.DatetimeField(null=True)
 
 
-class StationProduct(Model):
+class Product(Model):
     class Meta:
-        table = 'station_products'
+        table = 'products'
 
     id = fields.BigIntField(pk=True)
     station = fields.ForeignKeyField('models.Station', to_field='id', related_name='station_product')
-    product_code = fields.CharField(max_length=64, null=True)
-    product_name = fields.CharField(max_length=128, null=True)
-    price = fields.CharField(max_length=64, null=True)
+    code = fields.CharField(max_length=32, null=True)
+    name = fields.CharField(max_length=32, null=True)
+    price = fields.FloatField(null=True)
     date = fields.DatetimeField(null=True)
+
+
+class Order(Model):
+    class Meta:
+        table = 'orders'
+
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField('models.User', to_field='user_id')
+    station = fields.ForeignKeyField('models.Station', to_field='id')
+    product = fields.ForeignKeyField('models.Product', to_field='id')
+    amount = fields.FloatField()
+    total_price = fields.BigIntField()
+    is_paid = fields.BooleanField(default=False)  # auto
+    is_approved = fields.BooleanField(default=False)  # manager
+
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
 
 class SupportRequest(Model):

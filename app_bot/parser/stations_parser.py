@@ -2,7 +2,7 @@ import logging
 import asyncio
 from aiohttp import ClientSession, BasicAuth
 from settings import settings
-from core.database.models import Station, StationProduct
+from core.database.models import Station, Product
 from parser.validators import StationData, ProductData
 
 logger = logging.getLogger(__name__)
@@ -97,11 +97,11 @@ class StationsParser:
     @staticmethod
     async def __update_product(product_data: ProductData):
         try:
-            await StationProduct.update_or_create(
+            await Product.update_or_create(
                 station_id=product_data.station_id,
-                product_code=product_data.product_code,
+                code=product_data.product_code,
                 defaults={
-                    'product_name': product_data.product_name,
+                    'name': product_data.product_name,
                     'price': product_data.price,
                     'date': product_data.date
                 },
