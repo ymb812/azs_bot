@@ -1,4 +1,5 @@
 import logging
+import pytz
 from datetime import datetime
 from tortoise import fields
 from tortoise.models import Model
@@ -14,48 +15,84 @@ class User(Model):
     user_id = fields.BigIntField(pk=True, index=True)
     username = fields.CharField(max_length=32, index=True, null=True)
     is_registered = fields.BooleanField(default=False)
-    is_registered_meditation = fields.BooleanField(default=False)
-    is_registered_days = fields.BooleanField(default=False)
-    is_user_agreement_accepted = fields.BooleanField(default=False)
     fio = fields.CharField(max_length=64, null=True)
-    email = fields.CharField(max_length=64, null=True)
     phone = fields.CharField(max_length=16, null=True)
     status = fields.CharField(max_length=32, null=True)  # admin
-
-    first_name = fields.CharField(max_length=64)
-    last_name = fields.CharField(max_length=64, null=True)
-    language_code = fields.CharField(max_length=2, null=True)
-    is_premium = fields.BooleanField(null=True)
+    refills_amount = fields.IntField(default=0)  # TODO: += 1 after successful payment
 
     created_at = fields.DatetimeField(auto_now_add=True)
-    updated_at = fields.DatetimeField(auto_now=True)
+    last_activity = fields.DatetimeField(auto_now=True)
 
     @classmethod
-    async def update_data(cls, user_id: int, first_name: str, last_name: str, username: str, language_code: str,
-                          is_premium: bool):
+    async def update_data(cls, user_id: int, username: str):
         user = await cls.filter(user_id=user_id).first()
+        tz = pytz.timezone('Europe/Moscow')
         if user is None:
-            await cls.create(
+            user = await cls.create(
                 user_id=user_id,
-                first_name=first_name,
-                last_name=last_name,
                 username=username,
-                language_code=language_code,
-                is_premium=is_premium,
+                last_activity=tz.localize(datetime.now()),
             )
         else:
             await cls.filter(user_id=user_id).update(
-                first_name=first_name,
-                last_name=last_name,
                 username=username,
-                language_code=language_code,
-                is_premium=is_premium,
-                updated_at=datetime.now()
             )
 
-    @classmethod
-    async def set_status(cls, user_id: int, status: str | None):
-        await cls.filter(user_id=user_id).update(status=status)
+        return user
+
+
+class FavouriteStation(Model):
+    class Meta:
+        table = 'favourite_stations'
+
+    id = fields.BigIntField(pk=True)
+    user = fields.ForeignKeyField('models.User', to_field='user_id')
+    station = fields.ForeignKeyField('models.Station', to_field='id')
+
+
+class Station(Model):
+    class Meta:
+        table = 'stations'
+
+    id = fields.BigIntField(pk=True)
+    name = fields.CharField(max_length=128, null=True)
+    number = fields.CharField(max_length=64, null=True)
+    region_name = fields.CharField(max_length=128, null=True)
+    federal_district = fields.CharField(max_length=128, null=True)
+    address = fields.CharField(max_length=256, null=True)
+    status = fields.CharField(max_length=64, null=True)
+    longitude = fields.CharField(max_length=32, null=True)
+    latitude = fields.CharField(max_length=32, null=True)
+    updated_at = fields.DatetimeField(null=True)
+
+
+class Product(Model):
+    class Meta:
+        table = 'products'
+
+    id = fields.BigIntField(pk=True)
+    station = fields.ForeignKeyField('models.Station', to_field='id', related_name='station_product')
+    code = fields.CharField(max_length=32, null=True)
+    name = fields.CharField(max_length=32, null=True)
+    price = fields.FloatField(null=True)
+    date = fields.DatetimeField(null=True)
+
+
+class Order(Model):
+    class Meta:
+        table = 'orders'
+
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField('models.User', to_field='user_id')
+    station = fields.ForeignKeyField('models.Station', to_field='id')
+    product = fields.ForeignKeyField('models.Product', to_field='id')
+    amount = fields.FloatField()
+    total_price = fields.BigIntField()
+    is_paid = fields.BooleanField(default=False)  # auto
+    is_approved = fields.BooleanField(default=False)  # manager
+
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
 
 class SupportRequest(Model):

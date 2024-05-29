@@ -8,17 +8,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DATABASE}
-    
-    container_name: bot_with_django_postgres
+
+    container_name: azs_postgres
     restart: 'always'
     ports:
-      - '5432'
+      - '5432:5432'
     volumes:
       - ./postgresql/data:/var/lib/postgresql/data
-    networks:
-      - bot_with_django_db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE}']
       interval: 5s
       timeout: 30s
       retries: 5
@@ -30,22 +28,17 @@ services:
       - '6379'
     volumes:
       - ./redis:/root/redis
-    networks:
-      - bot_with_django_db
-
 
   web:
     build:
       context: .
       dockerfile: DockerfileAdmin
-    container_name: bot_with_django_django
+    container_name: azs_django
     restart: always
     env_file:
       - .env
     ports:
       - '8000:8000'
-    networks:
-      - bot_with_django_db
     environment:
       DB_HOST: postgres
       TZ: Europe/Moscow
@@ -59,10 +52,8 @@ services:
     build:
       context: .
       dockerfile: DockerfileBot
-    container_name: dot_with_django_bot
+    container_name: azs_bot
     restart: 'always'
-    networks:
-      - bot_with_django_db
     env_file:
       - .env
     environment:
@@ -79,10 +70,8 @@ services:
     build:
       context: .
       dockerfile: DockerfileBroadcaster
-    container_name: bot_with_django_broadcaster
+    container_name: azs_broadcaster
     restart: 'always'
-    networks:
-      - bot_with_django_db
     env_file:
       - .env
     environment:
@@ -93,6 +82,3 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-
-networks:
-  bot_with_django_db:

@@ -4,8 +4,11 @@ from tortoise.expressions import Q
 from datetime import datetime
 from aiogram import Bot, types, exceptions
 from aiogram.utils.i18n import I18n
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from core.database import init
 from core.database.models import User, Dispatcher, Post, MailingLog
+from parser.stations_parser import StationsParser
 from settings import settings
 
 
@@ -149,7 +152,6 @@ class Broadcaster(object):
 
     @classmethod
     async def start_event_loop(cls):
-        logger.info('Broadcaster started')
         while True:
             try:
                 active_orders = await Dispatcher.filter(send_at__lte=datetime.now()).all()
@@ -196,5 +198,31 @@ async def main():
     await Broadcaster.start_event_loop()
 
 
+async def run_scheduler():
+    scheduler = AsyncIOScheduler()
+
+    # save_all_stations
+    scheduler.add_job(
+        func=StationsParser.save_all_stations,
+        trigger=CronTrigger(hour=settings.stations_parser_hours, minute=settings.stations_parser_minutes),
+        misfire_grace_time=10,
+    )
+
+    # save_all_products
+    scheduler.add_job(
+        func=StationsParser.save_all_products,
+        trigger=CronTrigger(hour=settings.products_parser_hours, minute=settings.products_parser_minutes),
+        misfire_grace_time=10,
+    )
+
+    scheduler.start()
+
+
+async def run_tasks():
+    broadcaster = asyncio.create_task(main())
+    scheduler = asyncio.create_task(run_scheduler())
+    await asyncio.gather(broadcaster, scheduler)
+
+
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(run_tasks())

@@ -1,103 +1,22 @@
-import re
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+import logging
+import uuid
+from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.api.entities import ShowMode
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
-from core.database.models import User, SupportRequest, Dispatcher, Post
-from core.keyboards.inline import support_kb
+from core.states.station import StationStateGroup
+from core.states.support import SupportStateGroup
+from core.database.models import User, SupportRequest, Product, Order
 from core.utils.texts import _
 from settings import settings
 
-
-class CallBackHandler:
-    @staticmethod
-    async def start_meditation(
-            callback: CallbackQuery,
-            widget: Button | Select,
-            dialog_manager: DialogManager,
-            item_id: str | None = None,
-    ):
-        # send 2 welcome msgs from DB
-        bot = dialog_manager.event.bot
-        welcome_post = await Post.get(id=settings.welcome_post_id)
-        welcome_post_id_2 = await Post.get(id=settings.welcome_post_id_2)
-        await bot.send_video_note(chat_id=callback.from_user.id, video_note=welcome_post.video_note_id)
-        await bot.send_video_note(chat_id=callback.from_user.id, video_note=welcome_post_id_2.video_note_id)
-
-        dialog_manager.dialog_data['welcome_post_text'] = welcome_post.text
-        dialog_manager.dialog_data['reg_type'] = 'meditation'
-
-        await dialog_manager.switch_to(MainMenuStateGroup.meditation, show_mode=ShowMode.DELETE_AND_SEND)
+logger = logging.getLogger(__name__)
 
 
-    @staticmethod
-    async def start_days(
-            callback: CallbackQuery,
-            widget: Button | Select,
-            dialog_manager: DialogManager,
-            item_id: str | None = None,
-    ):
-        dialog_manager.dialog_data['welcome_post_text_1'] = 'Вводное сообщение для дней'
-        dialog_manager.dialog_data['welcome_post_text_2'] = 'В 1 месяц выдаем счастливые даты и тд бесплатно'
-        dialog_manager.dialog_data['reg_type'] = 'days'
-
-        await dialog_manager.switch_to(MainMenuStateGroup.days_1, show_mode=ShowMode.DELETE_AND_SEND)
-
-    @staticmethod
-    async def start_general_registration(
-            callback: CallbackQuery,
-            widget: Button | Select,
-            dialog_manager: DialogManager,
-            item_id: str | None = None,
-    ):
-        await dialog_manager.start(state=RegistrationStateGroup.fio_input, data=dialog_manager.dialog_data)
-
-
-    @staticmethod
-    async def start_registration_meditation(
-            callback: CallbackQuery,
-            widget: Button | Select,
-            dialog_manager: DialogManager,
-            item_id: str | None = None,
-    ):
-        await User.filter(user_id=callback.from_user.id).update(
-            is_registered_meditation=True,
-        )
-
-        # send already registered msg from DB - for meditation
-        registered_post = await Post.get_or_none(id=settings.registered_post_id)
-        if registered_post:
-            await dialog_manager.event.bot.send_message(
-                chat_id=callback.from_user.id, text=registered_post.text,
-            )
-        else:
-            await dialog_manager.event.bot.send_message(
-                chat_id=callback.from_user.id, text=_('REGISTERED'),
-            )
-
-        await dialog_manager.switch_to(MainMenuStateGroup.main_menu, show_mode=ShowMode.DELETE_AND_SEND)
-
-
-    @staticmethod
-    async def start_registration_days(
-            callback: CallbackQuery,
-            widget: Button | Select,
-            dialog_manager: DialogManager,
-            item_id: str | None = None,
-    ):
-        await User.filter(user_id=callback.from_user.id).update(
-            is_registered_days=True,
-        )
-
-        # send already registered msg from DB - for days
-        days_post = await Post.get_or_none(id=settings.days_post_id)
-        await callback.message.answer_photo(photo=days_post.photo_file_id, caption=days_post.text)
-        await dialog_manager.switch_to(MainMenuStateGroup.main_menu, show_mode=ShowMode.DELETE_AND_SEND)
-
-
+class RegistrationCallbackHandler:
     @staticmethod
     async def entered_fio(
             message: Message,
@@ -115,24 +34,6 @@ class CallBackHandler:
 
         value: str
         dialog_manager.dialog_data['fio'] = value
-        await dialog_manager.switch_to(state=RegistrationStateGroup.email_input)
-
-
-    @staticmethod
-    async def entered_email(
-            message: Message,
-            widget: ManagedTextInput,
-            dialog_manager: DialogManager,
-            value,
-    ):
-        # correct checker
-        email = message.text.strip()
-        email_regex = '^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$'
-        if not re.match(email_regex, email):
-            return
-
-        value: str
-        dialog_manager.dialog_data['email'] = value
         await dialog_manager.switch_to(state=RegistrationStateGroup.phone_input)
 
 
@@ -159,19 +60,101 @@ class CallBackHandler:
             item_id: str | None = None,
     ):
         user = await User.get(user_id=callback.from_user.id)
-
         user.is_registered = True
         user.fio = dialog_manager.dialog_data['fio']
         user.phone = dialog_manager.dialog_data['phone']
-        user.email = dialog_manager.dialog_data['email']
         await user.save()
-
-        # delete notification order
-        await Dispatcher.filter(post_id=settings.notification_post_id, user_id=callback.from_user.id).delete()
 
         await dialog_manager.start(state=MainMenuStateGroup.main_menu, show_mode=ShowMode.DELETE_AND_SEND)
 
 
+class StationCallbackHandler:
+    @staticmethod
+    async def entered_station_id(
+            message: Message,
+            widget: ManagedTextInput,
+            dialog_manager: DialogManager,
+            value,
+    ):
+        dialog_manager.dialog_data['station_id'] = value
+        await dialog_manager.switch_to(state=StationStateGroup.confirm_station)
+
+
+    @staticmethod
+    async def list_of_products(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        station_id = dialog_manager.dialog_data['station_id']
+
+        products = await Product.filter(station_id=station_id)
+        if not products:
+            await callback.message.answer(text=f'Нет данных по заправке с id={station_id} - обратитесь в поддержку')
+            logger.critical(f'There is no product info station_id={station_id}')
+            return
+
+        await dialog_manager.switch_to(state=StationStateGroup.pick_product)
+
+
+    @staticmethod
+    async def selected_product(
+            callback: CallbackQuery,
+            widget: Select,
+            dialog_manager: DialogManager,
+            item_id: int
+    ):
+        dialog_manager.dialog_data['product_id'] = item_id
+        await dialog_manager.switch_to(state=StationStateGroup.input_amount)
+
+
+    @staticmethod
+    async def entered_amount(
+            message: Message,
+            widget: ManagedTextInput,
+            dialog_manager: DialogManager,
+            value,
+    ):
+        dialog_manager.dialog_data['amount'] = value
+        await dialog_manager.switch_to(state=StationStateGroup.confirm_order)
+
+
+    @staticmethod
+    async def create_order(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        order = await Order.create(
+            id=uuid.uuid4(),
+            user_id=callback.from_user.id,
+            station_id=dialog_manager.dialog_data['station_id'],
+            product_id=dialog_manager.dialog_data['product_id'],
+            amount=dialog_manager.dialog_data['amount'],
+            total_price=dialog_manager.dialog_data['total_price'],
+        )
+        dialog_manager.dialog_data['order_id'] = str(order.id)
+
+        # TODO: create invoice link here
+
+        await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
+
+
+    @staticmethod
+    async def delete_order(
+            callback: CallbackQuery,
+            widget: Button,
+            dialog_manager: DialogManager,
+    ):
+        await Order.filter(id=dialog_manager.dialog_data['order_id']).delete()
+
+        if widget.widget_id == 'main_menu':
+            await dialog_manager.start(state=MainMenuStateGroup.main_menu)
+        elif widget.widget_id == 'manager_support':
+            await dialog_manager.start(state=SupportStateGroup.question_input)
+
+
+class SupportCallbackHandler:
     @staticmethod
     async def entered_question(
             message: Message,
@@ -195,4 +178,4 @@ class CallBackHandler:
         )
 
         await message.answer(text=_('QUESTION_INFO'))
-        await dialog_manager.done()
+        await dialog_manager.start(state=MainMenuStateGroup.main_menu)

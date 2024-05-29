@@ -6,6 +6,7 @@ from settings import settings
 from setup import register
 from core.handlers import routers
 from core.dialogs import dialogues
+from core.middlewares.update_user_middleware import UpdateUserMiddleware
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
 
@@ -16,6 +17,8 @@ storage = RedisStorage.from_url(
     key_builder=DefaultKeyBuilder(with_destiny=True)
 )
 dp = Dispatcher(storage=storage)
+dp.message.middleware(UpdateUserMiddleware())
+dp.callback_query.middleware(UpdateUserMiddleware())
 core.middlewares.i18n.setup(dp)
 setup_dialogs(dp)
 
