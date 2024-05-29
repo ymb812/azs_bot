@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from tortoise.expressions import Q
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram import Bot, types, exceptions
 from aiogram.utils.i18n import I18n
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -206,6 +206,7 @@ async def run_scheduler():
         func=StationsParser.save_all_stations,
         trigger=CronTrigger(hour=settings.stations_parser_hours, minute=settings.stations_parser_minutes),
         misfire_grace_time=10,
+        next_run_time=datetime.now()
     )
 
     # save_all_products
@@ -213,6 +214,7 @@ async def run_scheduler():
         func=StationsParser.save_all_products,
         trigger=CronTrigger(hour=settings.products_parser_hours, minute=settings.products_parser_minutes),
         misfire_grace_time=10,
+        next_run_time=datetime.now() + timedelta(minutes=2),
     )
 
     scheduler.start()

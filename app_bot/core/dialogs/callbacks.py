@@ -9,8 +9,10 @@ from core.handlers.payment import successful_payment
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
+from core.states.favourite_stations import FavouriteStationsStateGroup
 from core.states.support import SupportStateGroup
-from core.database.models import User, SupportRequest, Product, Order
+from core.dialogs.custom_content import get_dialog_data
+from core.database.models import User, SupportRequest, Product, Order, FavouriteStation
 from core.utils.texts import _
 from settings import settings
 
@@ -96,6 +98,41 @@ class StationCallbackHandler:
             return
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_product)
+
+
+    @staticmethod
+    async def add_or_remove_favourite(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        favourite_station = await FavouriteStation.get_or_none(
+            user_id=dialog_manager.event.from_user.id,
+            station_id=dialog_manager.dialog_data['station_id']
+        )
+        if widget.widget_id == 'add_favourite':
+            if not favourite_station:
+                await FavouriteStation.create(
+                    user_id=dialog_manager.event.from_user.id,
+                    station_id=dialog_manager.dialog_data['station_id']
+                )
+
+        elif widget.widget_id == 'remove_favourite':
+            if favourite_station:
+                await favourite_station.delete()
+
+
+    @staticmethod
+    async def pick_other_station(
+            callback: CallbackQuery,
+            widget: Button | Select,
+            dialog_manager: DialogManager,
+    ):
+        # start favourite or go to inline
+        if get_dialog_data(dialog_manager=dialog_manager, key='from_favourite'):
+            await dialog_manager.start(state=FavouriteStationsStateGroup.menu)
+        else:
+            await dialog_manager.switch_to(state=StationStateGroup.input_station)
 
 
     @staticmethod
@@ -223,3 +260,17 @@ class SupportCallbackHandler:
 
         await message.answer(text=_('QUESTION_INFO'))
         await dialog_manager.start(state=MainMenuStateGroup.main_menu)
+
+
+class FavouriteStationsCallbackHandler:
+    @staticmethod
+    async def selected_station(
+            callback: CallbackQuery,
+            widget: Select,
+            dialog_manager: DialogManager,
+            item_id: int
+    ):
+        await dialog_manager.start(
+            state=StationStateGroup.confirm_station,
+            data={'from_favourite': True, 'station_id': item_id}
+        )

@@ -1,6 +1,7 @@
+from aiogram import F
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, Window
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, Case
 from aiogram_dialog.widgets.kbd import Button, Start, SwitchTo, Select, Column, Url
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
@@ -38,8 +39,17 @@ station_dialog = Dialog(
         Format(text='<b>{station.name}</b>\n'
                     '<b>Адрес:</b> {station.address}'),
         Button(Const(text=_('CONFIRM_BUTTON')), id='go_to_input_product', on_click=StationCallbackHandler.list_of_products),
-        # TODO: ADD BUTTON 'Добавить АЗС в избранные' (FavouriteStation)
-        SwitchTo(Const(text='Выбрать другую АЗС'), id='go_to_input_station', state=StationStateGroup.input_station),
+        Button(
+            Format('➕ Добавить в избранное', when=~F['is_favourite']),
+            id='add_favourite',
+            on_click=StationCallbackHandler.add_or_remove_favourite,
+        ),
+        Button(
+            Format('❌ Удалить из избранного', when=F['is_favourite']),
+            id='remove_favourite',
+            on_click=StationCallbackHandler.add_or_remove_favourite,
+        ),
+        Button(Const(text='Выбрать другую АЗС'), id='pick_other_station', on_click=StationCallbackHandler.pick_other_station),
         getter=get_station_data,
         state=StationStateGroup.confirm_station
     ),
