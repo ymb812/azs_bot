@@ -77,6 +77,14 @@ msgid "FOLLOWED_BUTTON"
 msgstr "✅ Подписался"
 
 
+msgid "APPROVE_BUTTON"
+msgstr "✅ Одобрить"
+
+
+msgid "REJECT_BUTTON"
+msgstr "❌ Отклонить"
+
+
 # texts
 msgid "CANCEL_MSG"
 msgstr "Никакие цепочки процессов не запущены. Отменять нечего."

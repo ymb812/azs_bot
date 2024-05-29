@@ -1,10 +1,11 @@
 import logging
 import uuid
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, LabeledPrice
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.api.entities import ShowMode
+from core.handlers.payment import successful_payment
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
@@ -135,7 +136,18 @@ class StationCallbackHandler:
         )
         dialog_manager.dialog_data['order_id'] = str(order.id)
 
-        # TODO: create invoice link here
+        # create invoice link here
+        invoice_link = await dialog_manager.event.bot.create_invoice_link(
+            title=f'Заказ {order.id}',
+            description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
+                        f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
+                        f'Адрес: {dialog_manager.dialog_data["station_address"]}',
+            provider_token=settings.payment_token.get_secret_value(),
+            currency='rub',
+            prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
+            payload=f'{order.id}',
+        )
+        dialog_manager.dialog_data['invoice_link'] = invoice_link
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
 
@@ -152,6 +164,38 @@ class StationCallbackHandler:
             await dialog_manager.start(state=MainMenuStateGroup.main_menu)
         elif widget.widget_id == 'manager_support':
             await dialog_manager.start(state=SupportStateGroup.question_input)
+
+
+    @staticmethod
+    async def entered_payment_photo(
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager,
+    ):
+        # handle file input
+        photo_file_id = None
+        if message.photo:
+            photo_file_id = message.photo[-1].file_id
+        dialog_manager.dialog_data['photo_file_id'] = photo_file_id
+
+        await dialog_manager.switch_to(state=StationStateGroup.confirm_payment_photo)
+
+
+    @staticmethod
+    async def successful_card_payment(
+            callback: CallbackQuery,
+            widget: Button,
+            dialog_manager: DialogManager,
+    ):
+        # update order, update user, send data in chat
+        await successful_payment(
+            order_id=dialog_manager.dialog_data['order_id'],
+            user_id=callback.from_user.id,
+            bot=dialog_manager.event.bot,
+            is_tg_payment=False,
+        )
+
+        await dialog_manager.start(MainMenuStateGroup.main_menu)
 
 
 class SupportCallbackHandler:
