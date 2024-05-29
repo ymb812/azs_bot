@@ -244,20 +244,29 @@ class SupportCallbackHandler:
             value,
     ):
         question = message.text.strip()
-        await SupportRequest.create(
+        support_request = await SupportRequest.create(
             user_id=message.from_user.id,
             text=question,
         )
 
-        # send question to admin
         if message.from_user.username:
             username = f'@{message.from_user.username}'
         else:
             username = f'<a href="tg://user?id={message.from_user.id}">ссылка</a>'
-        await dialog_manager.middleware_data['bot'].send_message(
-            chat_id=settings.admin_chat_id, text=_('QUESTION_FROM_USER', username=username, question=question)
+
+        # send question to a new topic in the managers chat
+        topic = await dialog_manager.event.bot.create_forum_topic(
+            chat_id=settings.managers_chat_id,
+            name=f'Поддержка | №{support_request.id}',
+        )
+        await dialog_manager.event.bot.send_message(
+            chat_id=settings.managers_chat_id,
+            message_thread_id=topic.message_thread_id,
+            text=f'<b>Запрос №{support_request.id} в поддержку от пользователя {username}</b>\n\n'
+                 f'<i>{question}</i>',
         )
 
+        # send info msg to the user
         await message.answer(text=_('QUESTION_INFO'))
         await dialog_manager.start(state=MainMenuStateGroup.main_menu)
 
