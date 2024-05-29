@@ -7,7 +7,7 @@ class BotSettings(BaseModel):
     payment_token: SecretStr = fields.Field(max_length=100, alias='TELEGRAM_PAYMENT_TOKEN')
     admin_password: SecretStr = fields.Field(max_length=100, alias='ADMIN_PASSWORD')
     admin_chat_id: str = fields.Field(alias='ADMIN_CHAT_ID')
-    required_channel_id: str = fields.Field(alias='REQUIRED_CHANNEL_ID')
+    managers_chat_id: str = fields.Field(alias='MANAGERS_CHAT_ID')
     welcome_post_id: int = fields.Field(alias='WELCOME_POST_ID')
     welcome_post_id_2: int = fields.Field(alias='WELCOME_POST_ID_2')
     notification_post_id: int = fields.Field(alias='NOTIFICATION_POST_ID')

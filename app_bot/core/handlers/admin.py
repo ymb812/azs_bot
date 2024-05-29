@@ -1,10 +1,11 @@
 import json
 import logging
+from tortoise.expressions import F as F_exp
 from aiogram import types, Router, F, Bot
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from broadcaster import Broadcaster
-from core.database.models import User
+from core.database.models import User, Order
 from core.keyboards.inline import mailing_kb
 from core.states.mailing import MailingStateGroup
 from core.utils.texts import _
@@ -63,7 +64,7 @@ async def excel_stats(message: types.Message):
 
 
 # get file_id for broadcaster
-@router.message(F.video | F.video_note | F.photo | F.audio | F.animation | F.sticker | F.document)
+@router.message(Command(commands=['get_content']), F.video | F.video_note | F.photo | F.audio | F.animation | F.sticker | F.document)
 async def get_hash(message: types.Message):
     if (await User.get(user_id=message.from_user.id)).status != 'admin':
         return
@@ -86,3 +87,33 @@ async def get_hash(message: types.Message):
         return
 
     await message.answer(f'<code>{hashsum}</code>')
+
+
+@router.callback_query(lambda c: ('approve_' in c.data or 'reject_' in c.data))
+async def admin_team_approve_handler(callback: types.CallbackQuery, bot: Bot):
+    order_id = callback.data.split('_')[-1]
+    order = await Order.get(id=order_id)
+    user = await User.get(user_id=order.user_id)
+
+    if 'approve_' in callback.data:
+        # update order and user data
+        order.is_paid = True
+        user.payment_amount = F_exp('payment_amount') + order.total_price
+        user.refills_amount = F_exp('refills_amount') + 1
+
+        text = f'Ваш заказ <code>{order_id}</code> был одобрен'
+
+    elif 'reject_' in callback.data:
+        text = f'Ваш заказ <code>{order_id}</code> был отклонен'
+
+    # delete reply_markup
+    await callback.message.edit_reply_markup(reply_markup=None)
+
+    # send info to the user
+    await bot.send_message(
+        chat_id=user.user_id,
+        text=text,
+    )
+
+    await order.save()
+    await user.save()
