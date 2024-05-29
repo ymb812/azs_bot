@@ -5,6 +5,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.api.entities import ShowMode
+from core.handlers.payment import successful_payment
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
@@ -163,6 +164,38 @@ class StationCallbackHandler:
             await dialog_manager.start(state=MainMenuStateGroup.main_menu)
         elif widget.widget_id == 'manager_support':
             await dialog_manager.start(state=SupportStateGroup.question_input)
+
+
+    @staticmethod
+    async def entered_payment_photo(
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager,
+    ):
+        # handle file input
+        photo_file_id = None
+        if message.photo:
+            photo_file_id = message.photo[-1].file_id
+        dialog_manager.dialog_data['photo_file_id'] = photo_file_id
+
+        await dialog_manager.switch_to(state=StationStateGroup.confirm_payment_photo)
+
+
+    @staticmethod
+    async def successful_card_payment(
+            callback: CallbackQuery,
+            widget: Button,
+            dialog_manager: DialogManager,
+    ):
+        # update order, update user, send data in chat
+        await successful_payment(
+            order_id=dialog_manager.dialog_data['order_id'],
+            user_id=callback.from_user.id,
+            bot=dialog_manager.event.bot,
+            is_tg_payment=False,
+        )
+
+        await dialog_manager.start(MainMenuStateGroup.main_menu)
 
 
 class SupportCallbackHandler:

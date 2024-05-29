@@ -1,12 +1,21 @@
+from aiogram.types import ContentType
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Start, SwitchTo, Select, Column, Url
-from aiogram_dialog.widgets.input import TextInput
+from aiogram_dialog.widgets.input import TextInput, MessageInput
+from aiogram_dialog.widgets.media import DynamicMedia
 from core.dialogs.callbacks import StationCallbackHandler
-from core.dialogs.getters import get_bot_data, get_station_data, get_products_by_station, get_order_data, get_input_data
+from core.dialogs.getters import (
+    get_bot_data,
+    get_station_data,
+    get_products_by_station,
+    get_order_data,
+    get_input_data,
+    get_card_data,
+    get_payment_photo,
+)
 from core.states.main_menu import MainMenuStateGroup
 from core.states.station import StationStateGroup
-from core.states.support import SupportStateGroup
 from core.utils.texts import _
 
 
@@ -86,5 +95,33 @@ station_dialog = Dialog(
         Button(Const(text='Вернуться в меню'), id='main_menu', on_click=StationCallbackHandler.delete_order),
         getter=get_input_data,
         state=StationStateGroup.pick_payment,
+    ),
+
+    # input_payment_photo
+    Window(
+        Format(text='Переведите <b>{data[total_price]}</b> рублей по реквизитам:\n'
+                    '<i>{card_data.card_data}</i>\n\n'
+                    'После оплаты отправьте сюда скриншот'),
+        MessageInput(
+            func=StationCallbackHandler.entered_payment_photo,
+            content_types=[ContentType.PHOTO]
+        ),
+        SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_pick_payment', state=StationStateGroup.pick_payment),
+        getter=get_card_data,
+        state=StationStateGroup.input_payment_photo,
+    ),
+
+    # confirm_payment_photo
+    Window(
+        DynamicMedia(selector='media_content'),
+        Format(text='Нажмите на кнопку "Оплачено"\n\n'
+                    '<i>Если ошиблись - можете загрузить новый скриншот прямо сюда</i>'),
+        MessageInput(
+            func=StationCallbackHandler.entered_payment_photo,
+            content_types=[ContentType.PHOTO]
+        ),
+        Button(Const(text='Оплачено'), id='payment_is_done',  on_click=StationCallbackHandler.successful_card_payment),
+        getter=get_payment_photo,
+        state=StationStateGroup.confirm_payment_photo,
     ),
 )

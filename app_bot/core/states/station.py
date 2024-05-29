@@ -10,3 +10,4 @@ class StationStateGroup(StatesGroup):
 
     pick_payment = State()
     input_payment_photo = State()
+    confirm_payment_photo = State()

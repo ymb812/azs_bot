@@ -146,3 +146,12 @@ class MailingLog(Model):
     user = fields.ForeignKeyField('models.User', to_field='user_id')
     is_sent = fields.BooleanField()
     created_at = fields.DatetimeField(auto_now_add=True)
+
+
+class Settings(Model):
+    class Meta:
+        table = 'settings'
+
+    id = fields.BigIntField(pk=True)
+    card_data = fields.CharField(max_length=128)
+    tax_percent = fields.FloatField(default=0)
