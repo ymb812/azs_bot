@@ -1,5 +1,5 @@
 from aiogram_dialog import DialogManager
-from core.database.models import User, Station, Product
+from core.database.models import User, Station, Product, Order
 
 
 async def get_input_data(dialog_manager: DialogManager, **kwargs):
@@ -40,14 +40,17 @@ async def get_products_by_station(dialog_manager: DialogManager, **kwargs):
 
 async def get_order_data(dialog_manager: DialogManager, **kwargs):
     product = await Product.get(id=dialog_manager.dialog_data['product_id'])
+    station: Station = await product.station
     amount = dialog_manager.dialog_data['amount']
     total_price = round(amount * product.price, 2)
 
     dialog_manager.dialog_data['total_price'] = total_price
+    dialog_manager.dialog_data['product_name'] = product.name
+    dialog_manager.dialog_data['station_address'] = station.address
 
     return {
         'product': product,
-        'station': await product.station,
+        'station': station,
         'amount': amount,
         'total_price': total_price,
     }

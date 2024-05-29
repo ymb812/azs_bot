@@ -18,7 +18,8 @@ class User(Model):
     fio = fields.CharField(max_length=64, null=True)
     phone = fields.CharField(max_length=16, null=True)
     status = fields.CharField(max_length=32, null=True)  # admin
-    refills_amount = fields.IntField(default=0)  # TODO: += 1 after successful payment
+    payment_amount = fields.FloatField(default=0)
+    refills_amount = fields.IntField(default=0)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     last_activity = fields.DatetimeField(auto_now=True)
@@ -87,9 +88,8 @@ class Order(Model):
     station = fields.ForeignKeyField('models.Station', to_field='id')
     product = fields.ForeignKeyField('models.Product', to_field='id')
     amount = fields.FloatField()
-    total_price = fields.BigIntField()
-    is_paid = fields.BooleanField(default=False)  # auto
-    is_approved = fields.BooleanField(default=False)  # manager
+    total_price = fields.FloatField()
+    is_paid = fields.BooleanField(default=False)  # auto or via manager
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

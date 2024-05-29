@@ -1,22 +1,23 @@
-import datetime
 import logging
-from aiogram import Bot, types, Router, F
+from aiogram import Bot, types, Router, F, enums
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command, StateFilter
 from aiogram_dialog import DialogManager, StartMode
 from core.states.main_menu import MainMenuStateGroup
 from core.states.registration import RegistrationStateGroup
 from core.utils.texts import set_user_commands, set_admin_commands, _
-from core.database.models import User, Post, Dispatcher
+from core.database.models import User
 
 
 logger = logging.getLogger(__name__)
 router = Router(name='Start router')
 
 
-
 @router.message(Command(commands=['start']), StateFilter(None))
 async def start_handler(message: types.Message, bot: Bot, state: FSMContext, dialog_manager: DialogManager):
+    if message.chat.type != enums.ChatType.PRIVATE:
+        return
+
     await state.clear()
     try:
         await dialog_manager.reset_stack()

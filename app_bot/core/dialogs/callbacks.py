@@ -1,6 +1,6 @@
 import logging
 import uuid
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, LabeledPrice
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
@@ -135,7 +135,18 @@ class StationCallbackHandler:
         )
         dialog_manager.dialog_data['order_id'] = str(order.id)
 
-        # TODO: create invoice link here
+        # create invoice link here
+        invoice_link = await dialog_manager.event.bot.create_invoice_link(
+            title=f'Заказ {order.id}',
+            description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
+                        f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
+                        f'Адрес: {dialog_manager.dialog_data["station_address"]}',
+            provider_token=settings.payment_token.get_secret_value(),
+            currency='rub',
+            prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
+            payload=f'{order.id}',
+        )
+        dialog_manager.dialog_data['invoice_link'] = invoice_link
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
 
