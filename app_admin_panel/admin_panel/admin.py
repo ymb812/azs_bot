@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.resources import ModelResource
-from admin_panel.models import User, SupportRequest, Dispatcher, Post, MailingLog
+from admin_panel.models import User, SupportRequest, Dispatcher, Post, MailingLog, Order, Settings
 
 
 class CustomImportExport(ImportExportModelAdmin, ExportActionModelAdmin):
@@ -18,20 +18,23 @@ class UserResource(ModelResource):
 @admin.register(User)
 class UserAdmin(CustomImportExport):
     resource_classes = [UserResource]
-    list_display = ('user_id', 'first_name', 'created_at', 'is_registered_meditation', 'is_registered_days')
-    list_display_links = ('user_id', 'first_name',)
-    list_editable = ('is_registered_meditation', 'is_registered_days')
-    list_filter = ('is_registered_meditation', 'is_registered_days')
+    list_display = ('user_id', 'fio', 'phone', 'created_at', 'last_activity')
+    list_display_links = ('user_id',)
+
 
 @admin.register(SupportRequest)
 class SupportRequestAdmin(CustomImportExport):
     list_display = [field.name for field in SupportRequest._meta.fields]
 
 
-@admin.register(Dispatcher)
+@admin.register(Order)
 class OrderAdmin(CustomImportExport):
+    list_display = ['id', 'user', 'amount', 'total_price', 'is_paid', 'created_at', 'updated_at']
+
+
+@admin.register(Dispatcher)
+class DispatcherAdmin(CustomImportExport):
     list_display = [field.name for field in Dispatcher._meta.fields]
-    list_editable = ('is_registered_meditation', 'is_registered_days', 'is_for_all_users')
 
 
 @admin.register(Post)
@@ -43,6 +46,12 @@ class OrderAdmin(CustomImportExport):
 @admin.register(MailingLog)
 class MailingLogAdmin(CustomImportExport):
     list_display = [field.name for field in MailingLog._meta.fields]
+
+
+@admin.register(Settings)
+class SettingsAdmin(CustomImportExport):
+    list_display = [field.name for field in Settings._meta.fields]
+    list_editable = ['card_data', 'tax_percent']
 
 
 # sort models from admin.py by their registering (not alphabetically)
