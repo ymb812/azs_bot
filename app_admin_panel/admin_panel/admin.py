@@ -18,7 +18,7 @@ class UserResource(ModelResource):
 @admin.register(User)
 class UserAdmin(CustomImportExport):
     resource_classes = [UserResource]
-    list_display = ('user_id', 'fio', 'phone', 'created_at', 'last_activity')
+    list_display = ('user_id', 'fio', 'phone', 'payment_amount', 'refills_amount', 'created_at', 'last_activity')
     list_display_links = ('user_id',)
 
 
@@ -30,6 +30,7 @@ class SupportRequestAdmin(CustomImportExport):
 @admin.register(Order)
 class OrderAdmin(CustomImportExport):
     list_display = ['id', 'user', 'amount', 'total_price', 'is_paid', 'created_at', 'updated_at']
+    exclude = ['station', 'product']
 
 
 @admin.register(Dispatcher)
@@ -51,7 +52,7 @@ class MailingLogAdmin(CustomImportExport):
 @admin.register(Settings)
 class SettingsAdmin(CustomImportExport):
     list_display = [field.name for field in Settings._meta.fields]
-    list_editable = ['card_data', 'tax_percent']
+    list_editable = ['card_data', 'discount_percent']
 
 
 # sort models from admin.py by their registering (not alphabetically)

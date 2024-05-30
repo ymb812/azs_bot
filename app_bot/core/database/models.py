@@ -154,4 +154,4 @@ class Settings(Model):
 
     id = fields.BigIntField(pk=True)
     card_data = fields.CharField(max_length=128)
-    tax_percent = fields.FloatField(default=0)
+    discount_percent = fields.FloatField(default=0)

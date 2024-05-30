@@ -14,6 +14,8 @@ class User(models.Model):
     fio = models.CharField(max_length=64, null=True, blank=True)
     phone = models.CharField(max_length=16, null=True, blank=True)
     status = models.CharField(max_length=32, null=True, blank=True)
+    payment_amount = models.FloatField(default=0, verbose_name='Сумма заправок')
+    refills_amount = models.IntegerField(default=0, verbose_name='Кол-во заправок')
 
     created_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now=True)
@@ -179,4 +181,4 @@ class Settings(models.Model):
 
     id = models.AutoField(primary_key=True, db_index=True)
     card_data = models.TextField(max_length=256, verbose_name='Реквизиты карты')
-    tax_percent = models.FloatField(default=0)
+    discount_percent = models.FloatField(default=0, verbose_name='Процент скидки')
