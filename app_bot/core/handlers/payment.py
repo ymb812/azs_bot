@@ -43,7 +43,7 @@ def get_username_or_link(user: User):
 
 
 # for tg and card payments
-async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_payment: bool):
+async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_payment: bool, photo_file_id: str = None):
     order = await Order.get(id=order_id)
     user = await User.get(user_id=user_id)
 
@@ -74,12 +74,21 @@ async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_paymen
         chat_id=settings.managers_chat_id,
         name=topic_name,
     )
-    await bot.send_message(
-        chat_id=settings.managers_chat_id,
-        message_thread_id=topic.message_thread_id,
-        text=topic_text,
-        reply_markup=reply_markup,
-    )
+    if not photo_file_id:
+        await bot.send_message(
+            chat_id=settings.managers_chat_id,
+            message_thread_id=topic.message_thread_id,
+            text=topic_text,
+            reply_markup=reply_markup,
+        )
+    elif photo_file_id:
+        await bot.send_photo(
+            chat_id=settings.managers_chat_id,
+            message_thread_id=topic.message_thread_id,
+            caption=topic_text,
+            photo=photo_file_id,
+            reply_markup=reply_markup,
+        )
 
     # send info msg to the user
     await bot.send_message(

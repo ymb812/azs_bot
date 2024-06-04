@@ -230,6 +230,7 @@ class StationCallbackHandler:
             user_id=callback.from_user.id,
             bot=dialog_manager.event.bot,
             is_tg_payment=False,
+            photo_file_id=dialog_manager.dialog_data['photo_file_id'],
         )
 
         await dialog_manager.start(MainMenuStateGroup.main_menu)

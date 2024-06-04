@@ -26,8 +26,8 @@ SECRET_KEY = settings.secret_key.get_secret_value()
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = settings.debug_mode
 
-ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost', 'host.docker.internal', '176.123.168.109']
-
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost', 'host.docker.internal', 'shiner-lasting-man.ngrok-free.app']
+CSRF_TRUSTED_ORIGINS = ['https://shiner-lasting-man.ngrok-free.app', 'http://localhost:8000']
 # Application definition
 
 INSTALLED_APPS = [
