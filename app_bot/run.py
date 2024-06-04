@@ -3,7 +3,7 @@ import logging
 import core.middlewares
 from aiogram import Bot, Dispatcher, filters
 from aiogram_dialog import setup_dialogs, DialogManager, StartMode, ShowMode
-from aiogram_dialog.api.exceptions import UnknownIntent, UnknownState
+from aiogram_dialog.api.exceptions import UnknownIntent, UnknownState, OutdatedIntent
 from settings import settings
 from setup import register
 from core.handlers import routers
@@ -22,6 +22,10 @@ async def handle_unknown_intent_or_state(event, dialog_manager: DialogManager):
     )
 
 
+async def handle_outdated_intent(event, dialog_manager: DialogManager):
+    logger.error('Skip error with outdated_intent: %s', event.exception)
+
+
 bot = Bot(settings.bot_token.get_secret_value(), parse_mode='HTML')
 
 storage = RedisStorage.from_url(
@@ -38,6 +42,11 @@ setup_dialogs(dp)
 dp.errors.register(
     handle_unknown_intent_or_state,
     filters.ExceptionTypeFilter(UnknownIntent, UnknownState),
+)
+# skip outdated error
+dp.errors.register(
+    handle_outdated_intent,
+    filters.ExceptionTypeFilter(OutdatedIntent),
 )
 
 for _r in routers + dialogues:
