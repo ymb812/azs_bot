@@ -99,7 +99,7 @@ station_dialog = Dialog(
     # pick_payment
     Window(
         Const(text='<b>Выберите вариант оплаты или другое действие</b>'),
-        Url(Const(text='💳 Юкасса'),  url=Format(text='{data[invoice_link]}')),
+        #Url(Const(text='💳 Юкасса'),  url=Format(text='{data[invoice_link]}')),
         SwitchTo(Const(text='💳 Перевод по номеру карты'), id='card_photo', state=StationStateGroup.input_payment_photo),
         Button(Const(text='Связаться с менеджером'), id='manager_support', on_click=StationCallbackHandler.delete_order),
         Button(Const(text='Вернуться в меню'), id='main_menu', on_click=StationCallbackHandler.delete_order),

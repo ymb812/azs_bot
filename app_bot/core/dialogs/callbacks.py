@@ -174,17 +174,17 @@ class StationCallbackHandler:
         dialog_manager.dialog_data['order_id'] = str(order.id)
 
         # create invoice link here
-        invoice_link = await dialog_manager.event.bot.create_invoice_link(
-            title=f'Заказ {order.id}',
-            description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
-                        f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
-                        f'Адрес: {dialog_manager.dialog_data["station_address"]}',
-            provider_token=settings.payment_token.get_secret_value(),
-            currency='rub',
-            prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
-            payload=f'{order.id}',
-        )
-        dialog_manager.dialog_data['invoice_link'] = invoice_link
+        # invoice_link = await dialog_manager.event.bot.create_invoice_link(
+        #     title=f'Заказ {order.id}',
+        #     description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
+        #                 f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
+        #                 f'Адрес: {dialog_manager.dialog_data["station_address"]}',
+        #     provider_token=settings.payment_token.get_secret_value(),
+        #     currency='rub',
+        #     prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
+        #     payload=f'{order.id}',
+        # )
+        # dialog_manager.dialog_data['invoice_link'] = invoice_link
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
 
