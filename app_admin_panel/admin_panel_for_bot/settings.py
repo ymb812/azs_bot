@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'admin_panel.apps.AdminPanelConfig',
     'import_export',
+    'rangefilter',
 ]
 
 MIDDLEWARE = [

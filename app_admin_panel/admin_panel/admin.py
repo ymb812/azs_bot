@@ -2,7 +2,9 @@ from django.contrib import admin
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.resources import ModelResource
 from admin_panel.models import User, SupportRequest, Dispatcher, Post, MailingLog, Order, Settings
-
+from rangefilter.filters import (
+    DateRangeQuickSelectListFilterBuilder,
+)
 
 class CustomImportExport(ImportExportModelAdmin, ExportActionModelAdmin):
     pass
@@ -20,6 +22,11 @@ class UserAdmin(CustomImportExport):
     resource_classes = [UserResource]
     list_display = ('user_id', 'fio', 'phone', 'payment_amount', 'refills_amount', 'created_at', 'last_activity')
     list_display_links = ('user_id',)
+
+    list_filter = (
+        ('created_at', DateRangeQuickSelectListFilterBuilder()),
+        ('last_activity', DateRangeQuickSelectListFilterBuilder()),
+    )
 
 
 @admin.register(SupportRequest)
