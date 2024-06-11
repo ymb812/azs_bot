@@ -101,7 +101,7 @@ async def admin_team_approve_handler(callback: types.CallbackQuery, bot: Bot):
         user.payment_amount = F_exp('payment_amount') + order.total_price
         user.refills_amount = F_exp('refills_amount') + 1
 
-        text = f'Ваш заказ <code>{order_id}</code> был одобрен'
+        text = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
 
     elif 'reject_' in callback.data:
         text = f'Ваш заказ <code>{order_id}</code> был отклонен'

@@ -55,12 +55,11 @@ async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_paymen
 
         topic_name = f'Заказ | ЮКасса'
         reply_markup = None
-        info_text_for_user = f'Заказ <code>{order.id}</code> успешно оплачен и отправлен менеджерам!'
-
+        info_text_for_user = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
     else:
         topic_name = f'Заказ | Перевод по карте'
         reply_markup = confirm_kb(order_id=order_id)
-        info_text_for_user = f'Заказ <code>{order.id}</code> успешно отправлен на модерацию!'
+        info_text_for_user = f'Оплата заправки отправлена на проверку.'
 
     topic_text = f'Заказ <code>{order.id}</code> от пользователя {get_username_or_link(user=user)}\n\n' \
                  f'<b>Топливо:</b> {(await order.product).name}\n' \
