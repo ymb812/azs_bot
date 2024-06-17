@@ -1,7 +1,7 @@
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment
-from core.database.models import User, Station, Product, Settings, FavouriteStation
+from core.database.models import User, Station, Product, Settings, FavouriteStation, Card
 from core.dialogs.custom_content import get_dialog_data
 
 
@@ -79,10 +79,14 @@ async def get_order_data(dialog_manager: DialogManager, **kwargs):
 
 
 async def get_card_data(dialog_manager: DialogManager, **kwargs):
-    card_data = await Settings.first()
+    card = await Card.filter(is_hidden=False).order_by('order_priority').first()
+    if not card:
+        card = await Card.all().order_by('-order_priority').first()
+
+    dialog_manager.dialog_data['card_id'] = card.id
 
     return {
-        'card_data': card_data,
+        'card_data': card,
         'data': dialog_manager.dialog_data,
     }
 

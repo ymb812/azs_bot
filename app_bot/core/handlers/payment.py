@@ -97,3 +97,5 @@ async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_paymen
 
     await order.save()
     await user.save()
+
+    return order
