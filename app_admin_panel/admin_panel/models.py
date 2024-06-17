@@ -180,5 +180,19 @@ class Settings(models.Model):
         verbose_name_plural = verbose_name
 
     id = models.AutoField(primary_key=True, db_index=True)
-    card_data = models.TextField(max_length=256, verbose_name='Реквизиты карты')
     discount_percent = models.FloatField(default=0, verbose_name='Процент скидки')
+
+
+class Card(models.Model):
+    class Meta:
+        db_table = 'cards'
+        ordering = ['id']
+        verbose_name = 'Карты'
+        verbose_name_plural = verbose_name
+
+    id = models.AutoField(primary_key=True, db_index=True)
+    card_data = models.TextField(max_length=256, verbose_name='Реквизиты карты')
+    paid_amount = models.BigIntegerField(verbose_name='Переведено', default=0)
+    limit = models.BigIntegerField(verbose_name='Лимит')
+    is_hidden = models.BooleanField(default=True, verbose_name='Скрыта')
+    order_priority = models.IntegerField(verbose_name='Порядковый номер')

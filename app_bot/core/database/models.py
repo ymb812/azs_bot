@@ -1,7 +1,7 @@
 import logging
 import pytz
 from datetime import datetime
-from tortoise import fields
+from tortoise import fields, expressions
 from tortoise.models import Model
 
 logger = logging.getLogger(__name__)
@@ -152,6 +152,29 @@ class Settings(Model):
     class Meta:
         table = 'settings'
 
-    id = fields.BigIntField(pk=True)
-    card_data = fields.CharField(max_length=128)
+    id = fields.IntField(pk=True)
     discount_percent = fields.FloatField(default=0)
+
+
+class Card(Model):
+    class Meta:
+        table = 'cards'
+
+    id = fields.IntField(pk=True)
+    card_data = fields.CharField(max_length=255)
+    paid_amount = fields.BigIntField(default=0)
+    limit = fields.BigIntField()
+    is_hidden = fields.BooleanField(default=True)
+    order_priority = fields.IntField()
+
+    @classmethod
+    async def update_card(cls, id: int, total_price: int):
+        card = await cls.get(id=id)
+
+        if card.paid_amount + total_price >= card.limit:
+            card.is_hidden = True
+        card.paid_amount = expressions.F('paid_amount') + total_price
+
+        await card.save()
+
+        return card.is_hidden

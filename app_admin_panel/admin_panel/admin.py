@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ExportActionModelAdmin, ImportExportModelAdmin
 from import_export.resources import ModelResource
-from admin_panel.models import User, SupportRequest, Dispatcher, Post, MailingLog, Order, Settings
+from admin_panel.models import User, SupportRequest, Dispatcher, Post, MailingLog, Order, Settings, Card
 from rangefilter.filters import (
     DateRangeQuickSelectListFilterBuilder,
 )
@@ -56,10 +56,17 @@ class MailingLogAdmin(CustomImportExport):
     list_display = [field.name for field in MailingLog._meta.fields]
 
 
+@admin.register(Card)
+class CardAdmin(CustomImportExport):
+    list_display = [field.name for field in Card._meta.fields]
+    list_editable = ['card_data', 'limit', 'is_hidden', 'order_priority']
+
+
 @admin.register(Settings)
 class SettingsAdmin(CustomImportExport):
     list_display = [field.name for field in Settings._meta.fields]
-    list_editable = ['card_data', 'discount_percent']
+    list_editable = ['discount_percent']
+
 
 
 # sort models from admin.py by their registering (not alphabetically)
