@@ -10,7 +10,7 @@ def mailing_kb() -> InlineKeyboardMarkup:
     return kb.as_markup(resize_keyboard=True)
 
 
-def confirm_kb(order_id: str) -> InlineKeyboardMarkup:
+def confirm_order_kb(order_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text=_('APPROVE_BUTTON'), callback_data=f'approve_{order_id}')
     kb.button(text=_('REJECT_BUTTON'), callback_data=f'reject_{order_id}')

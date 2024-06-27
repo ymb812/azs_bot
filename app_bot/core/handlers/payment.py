@@ -4,7 +4,7 @@ from aiogram import types, Router, F, Bot
 from aiogram_dialog import DialogManager
 from core.database.models import User, Order
 from core.states.main_menu import MainMenuStateGroup
-from core.keyboards.inline import confirm_kb
+from core.keyboards.inline import confirm_order_kb
 from settings import settings
 
 
@@ -12,12 +12,13 @@ logger = logging.getLogger(__name__)
 router = Router(name='Basic commands router')
 
 
-# payment handler
+# payment handler - useless
 @router.pre_checkout_query()
 async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery, bot: Bot):
     await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
 
+# payment handler - useless
 @router.message(F.successful_payment)
 async def handle_successful_payment(message: types.Message, bot: Bot, dialog_manager: DialogManager):
     order_id = message.successful_payment.invoice_payload
@@ -27,7 +28,7 @@ async def handle_successful_payment(message: types.Message, bot: Bot, dialog_man
         order_id=order_id,
         user_id=message.from_user.id,
         bot=bot,
-        is_tg_payment=True,
+        is_auto_approve=True,
     )
 
     await dialog_manager.start(MainMenuStateGroup.main_menu)
@@ -43,29 +44,47 @@ def get_username_or_link(user: User):
 
 
 # for tg and card payments
-async def successful_payment(order_id: str, user_id: int, bot: Bot, is_tg_payment: bool, photo_file_id: str = None):
+async def successful_payment(
+        order_id: str,
+        user_id: int,
+        bot: Bot,
+        is_auto_approve: bool,  # TODO: pass this for payment via balance, cuz it's auto
+        photo_file_id: str = None,
+        is_balance_for_profile: bool = False,
+        total_price: float = 0,  # TODO: pass this for payment via balance, cuz it's auto and balance should be -=
+):
     order = await Order.get(id=order_id)
     user = await User.get(user_id=user_id)
 
-    if is_tg_payment:
-        # update order and user data instantly if via tg_payment
-        order.is_paid = True
-        user.payment_amount = F_exp('payment_amount') + order.total_price
-        user.refills_amount = F_exp('refills_amount') + 1
+    # handle orders
+    if not is_balance_for_profile:
+        if is_auto_approve:
+            # update order and user data instantly if via tg_payment
+            order.is_paid = True
+            user.payment_amount = F_exp('payment_amount') + order.total_price
+            user.refills_amount = F_exp('refills_amount') + 1
 
-        topic_name = f'Заказ | ЮКасса'
-        reply_markup = None
-        info_text_for_user = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
+            topic_name = f'Заказ | ЮКасса'
+            reply_markup = None
+            info_text_for_user = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
+        else:
+            topic_name = f'Заказ | Перевод по карте'
+            reply_markup = confirm_order_kb(order_id=order_id)
+            info_text_for_user = f'Оплата заправки отправлена на проверку.'
+
+        topic_text = f'Заказ <code>{order.id}</code> от пользователя {get_username_or_link(user=user)}\n\n' \
+                     f'<b>Топливо:</b> {(await order.product).name}\n' \
+                     f'<b>Кол-во:</b> {order.amount} л\n' \
+                     f'<b>Адрес:</b> {(await order.station).address}\n\n' \
+                     f'<b>Оплачено: {order.total_price} рублей</b>'
+
+    # handle balance for profile
     else:
-        topic_name = f'Заказ | Перевод по карте'
-        reply_markup = confirm_kb(order_id=order_id)
-        info_text_for_user = f'Оплата заправки отправлена на проверку.'
-
-    topic_text = f'Заказ <code>{order.id}</code> от пользователя {get_username_or_link(user=user)}\n\n' \
-                 f'<b>Топливо:</b> {(await order.product).name}\n' \
-                 f'<b>Кол-во:</b> {order.amount} л\n' \
-                 f'<b>Адрес:</b> {(await order.station).address}\n\n' \
-                 f'<b>Оплачено: {order.total_price} рублей</b>'
+        topic_name = f'Пополнение баланса'
+        reply_markup = confirm_order_kb(order_id=order_id)
+        info_text_for_user = f'Оплата пополнения отправлена на проверку.'
+        topic_text = f'Пополнение баланса <code>{order.id}</code> от пользователя {get_username_or_link(user=user)}\n\n' \
+                     f'<b>Сумма:</b> {total_price} рублей\n'
 
 
     # send data to new topic in managers chat

@@ -16,6 +16,7 @@ class User(models.Model):
     status = models.CharField(max_length=32, null=True, blank=True)
     payment_amount = models.FloatField(default=0, verbose_name='Сумма заправок')
     refills_amount = models.IntegerField(default=0, verbose_name='Кол-во заправок')
+    balance = models.FloatField(default=0, verbose_name='Баланс')
 
     created_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now=True)
@@ -88,11 +89,12 @@ class Order(models.Model):
 
     id = models.UUIDField(primary_key=True, db_index=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    station = models.ForeignKey(Station, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    amount = models.FloatField()
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, null=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    amount = models.FloatField(null=True)
     total_price = models.FloatField()
     is_paid = models.BooleanField(default=False, verbose_name='Оплачен')
+    is_for_balance = models.BooleanField(default=False, verbose_name='Пополнение баланса')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

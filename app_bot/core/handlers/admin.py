@@ -96,24 +96,37 @@ async def admin_team_approve_handler(callback: types.CallbackQuery, bot: Bot):
     user = await User.get(user_id=order.user_id)
 
     if 'approve_' in callback.data:
-        # update order and user data
-        order.is_paid = True
-        user.payment_amount = F_exp('payment_amount') + order.total_price
-        user.refills_amount = F_exp('refills_amount') + 1
+        # handle balance for profile
+        if order.is_for_balance:
+            order.is_paid = True
+            user.balance = F_exp('balance') + order.total_price
 
-        text = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
+            text = f'Баланс успешно пополнен на {order.total_price} рублей'
+
+        else:
+            # update order and user data
+            order.is_paid = True
+            user.payment_amount = F_exp('payment_amount') + order.total_price
+            user.refills_amount = F_exp('refills_amount') + 1
+
+            text = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
 
     elif 'reject_' in callback.data:
-        text = f'Ваш заказ <code>{order_id}</code> был отклонен'
+        # handle balance for profile
+        if order.is_for_balance:
+            text = f'Ваша заявка на пополнения баланса <code>{order_id}</code> была отклонена'
+
+        else:
+            text = f'Ваш заказ <code>{order_id}</code> был отклонен'
 
     # delete reply_markup
     await callback.message.edit_reply_markup(reply_markup=None)
+
+    await order.save()
+    await user.save()
 
     # send info to the user
     await bot.send_message(
         chat_id=user.user_id,
         text=text,
     )
-
-    await order.save()
-    await user.save()

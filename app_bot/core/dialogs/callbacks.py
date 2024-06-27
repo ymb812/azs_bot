@@ -11,6 +11,7 @@ from core.states.registration import RegistrationStateGroup
 from core.states.station import StationStateGroup
 from core.states.favourite_stations import FavouriteStationsStateGroup
 from core.states.support import SupportStateGroup
+from core.states.profile import ProfileStateGroup
 from core.dialogs.custom_content import get_dialog_data
 from core.database.models import User, SupportRequest, Product, Order, FavouriteStation, Card
 from core.utils.texts import _
@@ -226,18 +227,20 @@ class StationCallbackHandler:
     ):
         try:
             # update order, update user, send data in chat
-            order = await successful_payment(
-                order_id=dialog_manager.dialog_data['order_id'],
+            await successful_payment(
+                order_id=get_dialog_data(dialog_manager=dialog_manager, key='order_id'),
                 user_id=callback.from_user.id,
                 bot=dialog_manager.event.bot,
-                is_tg_payment=False,
+                is_auto_approve=False,
                 photo_file_id=dialog_manager.dialog_data['photo_file_id'],
+                is_balance_for_profile=dialog_manager.dialog_data['is_balance_for_profile'],  # for balance
+                total_price=dialog_manager.dialog_data['total_price'],  # for total_price
             )
 
             # update card limit
             is_hidden = await Card.update_card(
                 id=dialog_manager.dialog_data['card_id'],
-                total_price=order.total_price,
+                total_price=get_dialog_data(dialog_manager=dialog_manager, key='total_price'),
             )
 
             # send notification to the chat
@@ -249,7 +252,7 @@ class StationCallbackHandler:
 
 
         except Exception as e:
-            logger.critical(f'Error in update date for order_id={dialog_manager.dialog_data["order_id"]}', exc_info=e)
+            logger.critical(f'Error in update date for order_id={dialog_manager.dialog_data.get("order_id")}', exc_info=e)
 
         await dialog_manager.start(MainMenuStateGroup.main_menu)
 
@@ -302,3 +305,24 @@ class FavouriteStationsCallbackHandler:
             state=StationStateGroup.confirm_station,
             data={'from_favourite': True, 'station_id': item_id}
         )
+
+
+class ProfileCallbackHandler:
+    @staticmethod
+    async def entered_balance(
+            message: Message,
+            widget: ManagedTextInput,
+            dialog_manager: DialogManager,
+            value: int,
+    ):
+        order = await Order.create(
+            id=uuid.uuid4(),
+            user_id=message.from_user.id,
+            total_price=value,
+            is_for_balance=True,
+        )
+
+        dialog_manager.dialog_data['order_id'] = str(order.id)
+        dialog_manager.dialog_data['total_price'] = value
+        dialog_manager.dialog_data['is_balance_for_profile'] = True
+        await dialog_manager.start(state=StationStateGroup.input_payment_photo, data=dialog_manager.dialog_data)

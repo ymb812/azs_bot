@@ -85,9 +85,18 @@ async def get_card_data(dialog_manager: DialogManager, **kwargs):
 
     dialog_manager.dialog_data['card_id'] = card.id
 
+    # handle balance for profile
+    if dialog_manager.start_data:
+        dialog_manager.dialog_data['is_balance_for_profile'] = dialog_manager.start_data.get('is_balance_for_profile')
+    else:
+        dialog_manager.dialog_data['is_balance_for_profile'] = False
+
+    total_price = get_dialog_data(dialog_manager=dialog_manager, key='total_price')
+    dialog_manager.dialog_data['total_price'] = total_price
+
     return {
         'card_data': card,
-        'data': dialog_manager.dialog_data,
+        'total_price': total_price,
     }
 
 
