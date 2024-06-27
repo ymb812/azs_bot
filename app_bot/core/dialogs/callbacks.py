@@ -234,7 +234,6 @@ class StationCallbackHandler:
                 is_auto_approve=False,
                 photo_file_id=dialog_manager.dialog_data['photo_file_id'],
                 is_balance_for_profile=dialog_manager.dialog_data['is_balance_for_profile'],  # for balance
-                total_price=dialog_manager.dialog_data['total_price'],  # for total_price
             )
 
             # update card limit
@@ -253,6 +252,36 @@ class StationCallbackHandler:
 
         except Exception as e:
             logger.critical(f'Error in update date for order_id={dialog_manager.dialog_data.get("order_id")}', exc_info=e)
+
+        await dialog_manager.start(MainMenuStateGroup.main_menu)
+
+
+    @staticmethod
+    async def balance_payment(
+            callback: CallbackQuery,
+            widget: Button,
+            dialog_manager: DialogManager,
+    ):
+        user = await User.get(user_id=callback.from_user.id)
+        if user.balance < dialog_manager.dialog_data['total_price']:
+            await callback.message.answer(
+                text=f'Средств на балансе не достаточно для оплаты\n\n'
+                     f'<b>Баланс:</b> {user.balance} рублей\n'
+                     f'<b>К оплате:</b> {dialog_manager.dialog_data["total_price"]} рублей'
+            )
+            return
+
+        try:
+            # update order, update user, send data in chat
+            await successful_payment(
+                order_id=get_dialog_data(dialog_manager=dialog_manager, key='order_id'),
+                user_id=callback.from_user.id,
+                bot=dialog_manager.event.bot,
+                is_auto_approve=True,
+                is_balance_debit=True,
+            )
+        except Exception as e:
+            logger.critical(f'Error in balance_payment for user_id={callback.from_user.id}', exc_info=e)
 
         await dialog_manager.start(MainMenuStateGroup.main_menu)
 

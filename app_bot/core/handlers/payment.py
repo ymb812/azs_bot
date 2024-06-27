@@ -48,23 +48,25 @@ async def successful_payment(
         order_id: str,
         user_id: int,
         bot: Bot,
-        is_auto_approve: bool,  # TODO: pass this for payment via balance, cuz it's auto
+        is_auto_approve: bool,
         photo_file_id: str = None,
-        is_balance_for_profile: bool = False,
-        total_price: float = 0,  # TODO: pass this for payment via balance, cuz it's auto and balance should be -=
+        is_balance_for_profile: bool = False,  # balance for profile
+        is_balance_debit: bool = False,  # to auto debit the balance
 ):
     order = await Order.get(id=order_id)
     user = await User.get(user_id=user_id)
 
-    # handle orders
+    # handle azs orders
     if not is_balance_for_profile:
         if is_auto_approve:
             # update order and user data instantly if via tg_payment
             order.is_paid = True
             user.payment_amount = F_exp('payment_amount') + order.total_price
             user.refills_amount = F_exp('refills_amount') + 1
+            if is_balance_debit:
+                user.balance = F_exp('balance') - order.total_price
 
-            topic_name = f'Заказ | ЮКасса'
+            topic_name = f'Заказ | Списание с баланса'
             reply_markup = None
             info_text_for_user = f'Оплата прошла успешно, можете вставить пистолет в бак и заправляться. Если будут сложности напишите нашему менеджеру или наберите по телефону'
         else:
@@ -84,7 +86,7 @@ async def successful_payment(
         reply_markup = confirm_order_kb(order_id=order_id)
         info_text_for_user = f'Оплата пополнения отправлена на проверку.'
         topic_text = f'Пополнение баланса <code>{order.id}</code> от пользователя {get_username_or_link(user=user)}\n\n' \
-                     f'<b>Сумма:</b> {total_price} рублей\n'
+                     f'<b>Сумма:</b> {order.total_price} рублей\n'
 
 
     # send data to new topic in managers chat

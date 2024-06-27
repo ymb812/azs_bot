@@ -21,6 +21,7 @@ async def get_user_data(dialog_manager: DialogManager, **kwargs):
     return {
         'user': user,
         'payment_amount': round(user.payment_amount, 2),
+        'balance': round(user.balance, 2),
     }
 
 
