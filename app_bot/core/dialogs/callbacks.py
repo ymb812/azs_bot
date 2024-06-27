@@ -1,6 +1,6 @@
 import logging
 import uuid
-from aiogram.types import CallbackQuery, Message, LabeledPrice
+from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
@@ -12,7 +12,7 @@ from core.states.station import StationStateGroup
 from core.states.favourite_stations import FavouriteStationsStateGroup
 from core.states.support import SupportStateGroup
 from core.dialogs.custom_content import get_dialog_data
-from core.database.models import User, SupportRequest, Product, Order, FavouriteStation
+from core.database.models import User, SupportRequest, Product, Order, FavouriteStation, Card
 from core.utils.texts import _
 from settings import settings
 
@@ -174,17 +174,17 @@ class StationCallbackHandler:
         dialog_manager.dialog_data['order_id'] = str(order.id)
 
         # create invoice link here
-        invoice_link = await dialog_manager.event.bot.create_invoice_link(
-            title=f'Заказ {order.id}',
-            description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
-                        f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
-                        f'Адрес: {dialog_manager.dialog_data["station_address"]}',
-            provider_token=settings.payment_token.get_secret_value(),
-            currency='rub',
-            prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
-            payload=f'{order.id}',
-        )
-        dialog_manager.dialog_data['invoice_link'] = invoice_link
+        # invoice_link = await dialog_manager.event.bot.create_invoice_link(
+        #     title=f'Заказ {order.id}',
+        #     description=f'Топливо: {dialog_manager.dialog_data["product_name"]}\n'
+        #                 f'Кол-во: {dialog_manager.dialog_data["amount"]} л\n'
+        #                 f'Адрес: {dialog_manager.dialog_data["station_address"]}',
+        #     provider_token=settings.payment_token.get_secret_value(),
+        #     currency='rub',
+        #     prices=[LabeledPrice(label=f'Заказ {order.id}', amount=round(dialog_manager.dialog_data['total_price'] * 100))],
+        #     payload=f'{order.id}',
+        # )
+        # dialog_manager.dialog_data['invoice_link'] = invoice_link
 
         await dialog_manager.switch_to(state=StationStateGroup.pick_payment)
 
@@ -224,14 +224,32 @@ class StationCallbackHandler:
             widget: Button,
             dialog_manager: DialogManager,
     ):
-        # update order, update user, send data in chat
-        await successful_payment(
-            order_id=dialog_manager.dialog_data['order_id'],
-            user_id=callback.from_user.id,
-            bot=dialog_manager.event.bot,
-            is_tg_payment=False,
-            photo_file_id=dialog_manager.dialog_data['photo_file_id'],
-        )
+        try:
+            # update order, update user, send data in chat
+            order = await successful_payment(
+                order_id=dialog_manager.dialog_data['order_id'],
+                user_id=callback.from_user.id,
+                bot=dialog_manager.event.bot,
+                is_tg_payment=False,
+                photo_file_id=dialog_manager.dialog_data['photo_file_id'],
+            )
+
+            # update card limit
+            is_hidden = await Card.update_card(
+                id=dialog_manager.dialog_data['card_id'],
+                total_price=order.total_price,
+            )
+
+            # send notification to the chat
+            if is_hidden:
+                await dialog_manager.event.bot.send_message(
+                    chat_id=settings.managers_chat_id,
+                    text=f'На всех картах платеж превышает допустимые лимиты - добавьте новую карту через админ-панель!'
+                )
+
+
+        except Exception as e:
+            logger.critical(f'Error in update date for order_id={dialog_manager.dialog_data["order_id"]}', exc_info=e)
 
         await dialog_manager.start(MainMenuStateGroup.main_menu)
 
