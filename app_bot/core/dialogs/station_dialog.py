@@ -101,6 +101,7 @@ station_dialog = Dialog(
         Const(text='<b>Выберите вариант оплаты или другое действие</b>'),
         #Url(Const(text='💳 Юкасса'),  url=Format(text='{data[invoice_link]}')),
         SwitchTo(Const(text='💳 Перевод по номеру карты'), id='card_photo', state=StationStateGroup.input_payment_photo),
+        Button(Const(text='💸 Оплата по балансу'), id='balance_payment', on_click=StationCallbackHandler.balance_payment),
         Button(Const(text='Связаться с менеджером'), id='manager_support', on_click=StationCallbackHandler.delete_order),
         Button(Const(text='Вернуться в меню'), id='main_menu', on_click=StationCallbackHandler.delete_order),
         getter=get_input_data,
@@ -109,14 +110,17 @@ station_dialog = Dialog(
 
     # input_payment_photo
     Window(
-        Format(text='Переведите <b>{data[total_price]}</b> рублей по реквизитам:\n'
+        Format(text='Переведите <b>{total_price}</b> рублей по реквизитам:\n'
                     '<i>{card_data.card_data}</i>\n\n'
                     'После оплаты отправьте сюда скриншот'),
         MessageInput(
             func=StationCallbackHandler.entered_payment_photo,
             content_types=[ContentType.PHOTO]
         ),
-        SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_pick_payment', state=StationStateGroup.pick_payment),
+        SwitchTo(Const(text=_('BACK_BUTTON')), id='go_to_pick_payment', state=StationStateGroup.pick_payment,
+                 when=~F['dialog_data']['is_balance_for_profile']),
+        Start(Const(text=_('BACK_BUTTON')), id='go_to_menu', state=MainMenuStateGroup.main_menu,
+              when=F['dialog_data']['is_balance_for_profile']),
         getter=get_card_data,
         state=StationStateGroup.input_payment_photo,
     ),

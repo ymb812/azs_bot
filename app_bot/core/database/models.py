@@ -20,6 +20,7 @@ class User(Model):
     status = fields.CharField(max_length=32, null=True)  # admin
     payment_amount = fields.FloatField(default=0)
     refills_amount = fields.IntField(default=0)
+    balance = fields.FloatField(default=0)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     last_activity = fields.DatetimeField(auto_now=True)
@@ -85,11 +86,12 @@ class Order(Model):
 
     id = fields.UUIDField(pk=True)
     user = fields.ForeignKeyField('models.User', to_field='user_id')
-    station = fields.ForeignKeyField('models.Station', to_field='id')
-    product = fields.ForeignKeyField('models.Product', to_field='id')
-    amount = fields.FloatField()
+    station = fields.ForeignKeyField('models.Station', to_field='id', null=True)
+    product = fields.ForeignKeyField('models.Product', to_field='id', null=True)
+    amount = fields.FloatField(null=True)
     total_price = fields.FloatField()
     is_paid = fields.BooleanField(default=False)  # auto or via manager
+    is_for_balance = fields.BooleanField(default=False)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
