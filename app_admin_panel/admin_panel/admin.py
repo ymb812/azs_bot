@@ -20,7 +20,7 @@ class UserResource(ModelResource):
 @admin.register(User)
 class UserAdmin(CustomImportExport):
     resource_classes = [UserResource]
-    list_display = ('user_id', 'fio', 'phone', 'payment_amount', 'refills_amount', 'created_at', 'last_activity')
+    list_display = ('user_id', 'fio', 'phone', 'balance', 'payment_amount', 'refills_amount', 'created_at', 'last_activity')
     list_display_links = ('user_id',)
 
     list_filter = (
@@ -36,7 +36,7 @@ class SupportRequestAdmin(CustomImportExport):
 
 @admin.register(Order)
 class OrderAdmin(CustomImportExport):
-    list_display = ['id', 'user', 'amount', 'total_price', 'is_paid', 'created_at', 'updated_at']
+    list_display = ['id', 'user', 'amount', 'total_price', 'is_paid', 'is_for_balance', 'created_at', 'updated_at']
     exclude = ['station', 'product']
 
 
